@@ -16,7 +16,7 @@
 ## 安装
 
 ```bash
-npx git-repo-comitter
+npx grc --version
 ```
 
 本地开发：
@@ -31,17 +31,10 @@ pnpm build && node dist/index.cjs
 
 ```bash
 # 交互式配置
-npx git-repo-comitter init
+npx grc init
 
 # 生成提交信息并提交
-npx git-repo-comitter
-```
-
-也提供别名 `grc`：
-
-```bash
-grc init
-grc
+npx grc
 ```
 
 ### 配置优先级
