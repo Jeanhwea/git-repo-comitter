@@ -1,7 +1,8 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import { resolve } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
-import { DEFAULT_CONFIG, type AppConfig } from "./types";
+import { resolve } from "path";
+
+import { type AppConfig, DEFAULT_CONFIG } from "./types";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 

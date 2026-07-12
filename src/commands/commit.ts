@@ -1,7 +1,7 @@
 import { loadConfig } from "../config/loader";
 import type { AppConfig } from "../config/types";
+import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
-import { gitCommit, gitAddAll } from "../git/commit";
 import { generateCommitMessage } from "../llm/client";
 
 function ensureConfig(): AppConfig {

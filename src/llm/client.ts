@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+
 import type { AppConfig } from "../config/types";
 import { extractContent } from "../utils/llm";
 

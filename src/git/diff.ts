@@ -11,7 +11,6 @@ function execGit(args: string): string {
   }
 }
 
-
 export function getAllDiff(): string {
   const staged = execGit("diff --cached");
   const unstaged = execGit("diff");
@@ -25,7 +24,6 @@ export function getAllDiff(): string {
   }
   return parts.join("\n\n");
 }
-
 
 export function hasStagedChanges(): boolean {
   const result = execGit("diff --cached --name-only");

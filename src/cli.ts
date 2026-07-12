@@ -1,8 +1,15 @@
 import { Command } from "commander";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
 import { runCommit } from "./commands/commit";
 import { runInit } from "./commands/init";
-import { getVersion } from "./utils/cli";
 
+export function getVersion(): string {
+  const pkgPath = resolve(__dirname, "..", "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  return pkg.version;
+}
 const program = new Command();
 
 program
