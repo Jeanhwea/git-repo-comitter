@@ -12,7 +12,16 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     rollupOptions: {
-      external: ["openai", "yaml", "dotenv"],
+      external: [
+        "openai",
+        "yaml",
+        "dotenv",
+        "fs",
+        "path",
+        "os",
+        "child_process",
+        "readline/promises",
+      ],
     },
   },
 });

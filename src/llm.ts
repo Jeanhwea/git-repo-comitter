@@ -9,6 +9,20 @@ const SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。
 如果有重要变更，在空行后添加更详细的正文说明。
 只回复提交信息本身，不要添加任何解释。`;
 
+function extractContent(response: any): string {
+  const data = typeof response === "string" ? JSON.parse(response) : response;
+  const content = data.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .filter((c: any) => c.type === "text")
+      .map((c: any) => c.text)
+      .join("")
+      .trim();
+  }
+  return "";
+}
+
 export async function generateCommitMessage(
   diff: string,
   config: AppConfig,
@@ -27,7 +41,7 @@ export async function generateCommitMessage(
   const response = await client.chat.completions.create({
     model: config.llm.model,
     temperature: config.llm.temperature,
-    max_tokens: config.llm.max_tokens,
+    max_tokens: config.llm.max_output_tokens,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       {
@@ -37,9 +51,11 @@ export async function generateCommitMessage(
     ],
   });
 
-  const message = response.choices[0]?.message?.content?.trim();
+  const message = extractContent(response);
   if (!message) {
-    throw new Error("LLM returned an empty commit message.");
+    throw new Error(
+      `LLM returned an empty commit message. Response: ${JSON.stringify(response)}`,
+    );
   }
   return message;
 }
