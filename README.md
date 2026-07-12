@@ -33,11 +33,14 @@ D:\path\to\repo>
 ## 快速开始
 
 ```bash
+# 安装
+npm i -g git-repo-comitter
+
 # 交互式配置
-npx grc init
+grc init
 
 # 生成提交信息并提交
-npx grc
+grc
 ```
 
 ## 安装
