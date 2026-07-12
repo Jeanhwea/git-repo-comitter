@@ -22,6 +22,8 @@ program
     });
   });
 
+program.addHelpCommand(new Command("help").description("显示帮助信息"));
+
 function getVersion(): string {
   const pkgPath = resolve(__dirname, "..", "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
