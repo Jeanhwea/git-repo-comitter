@@ -1,5 +1,5 @@
 import { loadUserConfig, saveUserConfig } from "../config/loader";
-import { question } from "../utils";
+import { question } from "../utils/cli";
 
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");
