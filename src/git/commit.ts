@@ -10,5 +10,5 @@ export function gitCommit(message: string): void {
 }
 
 export function gitAddAll(): void {
-  execSync("git add -A", { cwd: process.cwd(), encoding: "utf-8" });
+  execSync("git add -A .", { cwd: process.cwd(), encoding: "utf-8" });
 }

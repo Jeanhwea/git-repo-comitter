@@ -11,10 +11,10 @@ export async function runCommit(): Promise<void> {
     process.exit(1);
   }
 
-  if (!hasStagedChanges()) {
-    console.log("未发现已暂存的变更，正在暂存所有变更...");
-  } else {
+  if (hasStagedChanges()) {
     gitAddAll();
+  } else {
+    console.log("未发现已暂存的变更，正在暂存所有变更...");
   }
 
   const diff = getAllDiff();
