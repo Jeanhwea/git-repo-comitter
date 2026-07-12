@@ -12,6 +12,9 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     rollupOptions: {
+      output: {
+        banner: "#!/usr/bin/env node\n",
+      },
       external: [
         "openai",
         "yaml",
