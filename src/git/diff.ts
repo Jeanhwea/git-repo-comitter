@@ -1,8 +1,8 @@
 import { execSync } from "child_process";
 
-function getStagedDiff(): string {
+function execGit(args: string): string {
   try {
-    return execSync("git diff --cached", {
+    return execSync(`git ${args}`, {
       cwd: process.cwd(),
       encoding: "utf-8",
     });
@@ -11,17 +11,10 @@ function getStagedDiff(): string {
   }
 }
 
-function getUnstagedDiff(): string {
-  try {
-    return execSync("git diff", { cwd: process.cwd(), encoding: "utf-8" });
-  } catch {
-    return "";
-  }
-}
 
 export function getAllDiff(): string {
-  const staged = getStagedDiff();
-  const unstaged = getUnstagedDiff();
+  const staged = execGit("diff --cached");
+  const unstaged = execGit("diff");
 
   const parts: string[] = [];
   if (staged.trim()) {
@@ -33,14 +26,8 @@ export function getAllDiff(): string {
   return parts.join("\n\n");
 }
 
+
 export function hasStagedChanges(): boolean {
-  try {
-    const result = execSync("git diff --cached --name-only", {
-      cwd: process.cwd(),
-      encoding: "utf-8",
-    });
-    return result.trim().length > 0;
-  } catch {
-    return false;
-  }
+  const result = execGit("diff --cached --name-only");
+  return result.trim().length > 0;
 }

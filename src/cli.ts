@@ -1,8 +1,7 @@
 import { Command } from "commander";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import { runCommit } from "./commands/commit";
 import { runInit } from "./commands/init";
+import { getVersion } from "./utils/cli";
 
 const program = new Command();
 
@@ -21,14 +20,6 @@ program
       process.exit(1);
     });
   });
-
-program.addHelpCommand(new Command("help").description("显示帮助信息"));
-
-function getVersion(): string {
-  const pkgPath = resolve(__dirname, "..", "package.json");
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-  return pkg.version;
-}
 
 export function runCli(): void {
   const args = process.argv.slice(2);
