@@ -11,7 +11,7 @@ export default defineConfig({
       formats: ["cjs"],
     },
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       output: {
         banner: "#!/usr/bin/env node\n",
