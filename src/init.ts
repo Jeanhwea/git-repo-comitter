@@ -21,8 +21,8 @@ export async function runInit(): Promise<void> {
 
   const model =
     (await question(
-      `模型名称 [${existing.llm?.model || "gpt-4"}]: `,
-    )).trim() || existing.llm?.model || "gpt-4";
+      `模型名称 [${existing.llm?.model || "deepseek-v4-flash"}]: `,
+    )).trim() || existing.llm?.model || "deepseek-v4-flash";
 
   const apiKey =
     (await question(
@@ -34,6 +34,6 @@ export async function runInit(): Promise<void> {
     process.exit(1);
   }
 
-  saveUserConfig({ endpoint, llm: { model: model, temperature: 0.7, max_tokens: 262144 } });
+  saveUserConfig({ apiKey, endpoint, llm: { model, temperature: 0.7, max_tokens: 262144 } });
   console.log("\n配置已保存到 ~/.grc/config.json");
 }
