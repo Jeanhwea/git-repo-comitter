@@ -1,11 +1,10 @@
-#!/usr/bin/env node
-
 import { loadConfig } from "./config";
 import { getAllDiff, hasStagedChanges } from "./git";
 import { generateCommitMessage } from "./llm";
 import { gitCommit, gitAddAll } from "./commit";
+import { runInit } from "./init";
 
-async function main() {
+async function runCommit() {
   const config = loadConfig();
 
   if (!config.apiKey) {
@@ -32,6 +31,16 @@ async function main() {
 
   gitCommit(message, config.git.repoPath);
   console.log("Commit successful!");
+}
+
+async function main() {
+  const subcommand = process.argv[2];
+
+  if (subcommand === "init") {
+    await runInit();
+  } else {
+    await runCommit();
+  }
 }
 
 main().catch((err) => {
