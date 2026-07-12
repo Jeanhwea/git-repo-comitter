@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
-dotenv.config();
+dotenv.config({ quiet: true });
 
 export interface LLMConfig {
   model: string;
