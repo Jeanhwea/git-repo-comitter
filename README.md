@@ -5,14 +5,22 @@
 
 ## 使用
 
-1. 配置环境变量：`LLM_API_KEY`、`LLM_ENDPOINT`、`LLM_MODEL`
-2. 运行：
-```bash
-# 发布后直接使用
-npx git-repo-comitter
+1. 配置环境变量：`LLM_API_KEY`、`LLM_ENDPOINT`、`LLM_MODEL`，或运行交互式初始化命令：
 
-# 本地开发
-pnpm build && node dist/index.cjs
-```
+   ```bash
+   npx git-repo-comitter init
+   ```
+
+   交互式命令会将配置保存到 `~/.grc/config.json`。
+
+2. 运行：
+
+   ```bash
+   # 发布后直接使用
+   npx git-repo-comitter
+
+   # 本地开发
+   pnpm build && node dist/index.cjs
+   ```
 
 也可通过 `config.yaml` 自定义模型参数和生成风格。

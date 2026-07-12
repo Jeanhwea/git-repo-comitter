@@ -11,7 +11,8 @@ dotenv.config();
 export interface LLMConfig {
   model: string;
   temperature: number;
-  max_tokens: number;
+  max_input_tokens: number;
+  max_output_tokens: number;
 }
 
 export interface StyleConfig {
@@ -30,12 +31,12 @@ export interface AppConfig {
   apiKey: string;
   endpoint: string;
 }
-
 const DEFAULT_CONFIG: AppConfig = {
   llm: {
     model: "deepseek-v4-flash",
     temperature: 0.7,
-    max_tokens: 262144,
+  max_input_tokens: 128000,
+  max_output_tokens: 16384,
   },
   style: {
     language: "zh-CN",
@@ -47,7 +48,6 @@ const DEFAULT_CONFIG: AppConfig = {
   apiKey: "",
   endpoint: "https://api.openai.com/v1",
 };
-
 export function loadUserConfig(): Partial<AppConfig> {
   try {
     if (!existsSync(USER_CONFIG_PATH)) return {};
@@ -86,18 +86,23 @@ export function loadConfig(configPath?: string): AppConfig {
 
   const userConfig = loadUserConfig();
 
+  const envModel = process.env.LLM_MODEL;
+  const envApiKey = process.env.LLM_API_KEY;
+  const envEndpoint = process.env.LLM_ENDPOINT;
+
   return {
     ...DEFAULT_CONFIG,
-    ...userConfig,
     ...fileConfig,
-    llm: { ...DEFAULT_CONFIG.llm, ...(userConfig.llm || {}), ...(fileConfig.llm || {}) },
-    style: { ...DEFAULT_CONFIG.style, ...(userConfig.style || {}), ...(fileConfig.style || {}) },
-    git: { ...DEFAULT_CONFIG.git, ...(userConfig.git || {}), ...(fileConfig.git || {}) },
-    apiKey: process.env.LLM_API_KEY || userConfig.apiKey || fileConfig.apiKey || "",
-    endpoint:
-      process.env.LLM_ENDPOINT ||
-      userConfig.endpoint ||
-      fileConfig.endpoint ||
-      DEFAULT_CONFIG.endpoint,
+    ...userConfig,
+    llm: {
+      ...DEFAULT_CONFIG.llm,
+      ...(fileConfig.llm || {}),
+      ...(userConfig.llm || {}),
+      ...(envModel ? { model: envModel } : {}),
+    },
+    style: { ...DEFAULT_CONFIG.style, ...(fileConfig.style || {}), ...(userConfig.style || {}) },
+    git: { ...DEFAULT_CONFIG.git, ...(fileConfig.git || {}), ...(userConfig.git || {}) },
+    apiKey: envApiKey || userConfig.apiKey || fileConfig.apiKey || "",
+    endpoint: envEndpoint || userConfig.endpoint || fileConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };
 }
