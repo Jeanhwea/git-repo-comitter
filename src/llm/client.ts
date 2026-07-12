@@ -2,7 +2,7 @@ import OpenAI from "openai";
 
 import type { AppConfig } from "../config/types";
 import { extractContent } from "../utils/llm";
-import { validateConventionalCommit } from "./checker";
+import { validateCommitMessage } from "./checker";
 
 const SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。根据提供的 Git diff，生成简洁且描述准确的提交信息。
 
@@ -74,7 +74,7 @@ export async function generateCommitMessage(
       );
     }
 
-    const validation = await validateConventionalCommit(message);
+    const validation = await validateCommitMessage(message);
     if (validation.valid) {
       return message;
     }
