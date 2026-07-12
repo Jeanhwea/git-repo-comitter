@@ -19,7 +19,6 @@ export default defineConfig({
       external: [
         "openai",
         "yaml",
-        "dotenv",
         "commander",
         "fs",
         "path",
