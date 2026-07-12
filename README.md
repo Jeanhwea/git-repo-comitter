@@ -8,8 +8,11 @@
 2. 运行：
 
 ```bash
-pnpm build
-node dist/index.cjs
+# 发布后直接使用
+npx git-repo-comitter
+
+# 本地开发
+pnpm build && node dist/index.cjs
 ```
 
 也可通过 `config.yaml` 自定义模型参数和生成风格。
