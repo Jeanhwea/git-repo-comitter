@@ -52,7 +52,7 @@ export async function generateCommitMessage(
   const response = await client.chat.completions.create({
     model: config.llm.model,
     temperature: config.llm.temperature,
-    max_tokens: config.llm.max_output_tokens,
+    max_tokens: config.llm.maxOutputTokens,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       {
