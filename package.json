@@ -7,6 +7,9 @@
   "bin": {
     "git-repo-comitter": "dist/index.cjs"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
