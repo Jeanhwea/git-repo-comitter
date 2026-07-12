@@ -12,7 +12,7 @@ export function question(query: string): Promise<string> {
 }
 
 export function getVersion(): string {
-  const pkgPath = resolve(__dirname, "..", "..", "package.json");
+  const pkgPath = resolve(__dirname, "..", "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   return pkg.version;
 }
