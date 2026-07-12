@@ -30,9 +30,9 @@ export interface AppConfig {
 
 const DEFAULT_CONFIG: AppConfig = {
   llm: {
-    model: "gpt-4",
+    model: "deepseek-v4-flash",
     temperature: 0.7,
-    max_tokens: 256,
+    max_tokens: 262144,
   },
   style: {
     language: "zh-CN",

@@ -1,13 +1,13 @@
 import OpenAI from "openai";
 import type { AppConfig } from "./config";
 
-const SYSTEM_PROMPT = `You are an expert at writing Git commit messages.
-Based on the provided Git diff, generate a concise and descriptive commit message.
-Follow the Conventional Commits format: <type>(<scope>): <description>
-Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-Keep the message under 72 characters for the subject line.
-If there are significant changes, add a blank line followed by a more detailed body.
-Respond with ONLY the commit message, no explanation.`;
+const SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。
+根据提供的 Git diff，生成简洁且描述准确的提交信息。
+遵循 Conventional Commits 格式：<type>(<scope>): <description>
+类型包括：feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+标题行控制在 72 个字符以内。
+如果有重要变更，在空行后添加更详细的正文说明。
+只回复提交信息本身，不要添加任何解释。`;
 
 export async function generateCommitMessage(
   diff: string,
@@ -32,7 +32,7 @@ export async function generateCommitMessage(
       { role: "system", content: SYSTEM_PROMPT },
       {
         role: "user",
-        content: `Here is the Git diff:\n\n${diff}`,
+        content: `以下是 Git diff 内容：\n\n${diff}`,
       },
     ],
   });
