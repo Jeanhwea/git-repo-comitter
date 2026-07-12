@@ -4,7 +4,6 @@ import { homedir } from "os";
 import YAML from "yaml";
 import dotenv from "dotenv";
 
-
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 dotenv.config({ quiet: true });
 
@@ -15,39 +14,33 @@ export interface LLMConfig {
   max_output_tokens: number;
 }
 
-export interface StyleConfig {
-  language: string;
-  template: string;
-}
-
 export interface GitConfig {
   repoPath: string;
+  commitFlags: string;
 }
 
 export interface AppConfig {
   llm: LLMConfig;
-  style: StyleConfig;
   git: GitConfig;
   apiKey: string;
   endpoint: string;
 }
+
 const DEFAULT_CONFIG: AppConfig = {
   llm: {
     model: "deepseek-v4-flash",
     temperature: 0.7,
-  max_input_tokens: 128000,
-  max_output_tokens: 16384,
-  },
-  style: {
-    language: "zh-CN",
-    template: "conventional",
+    max_input_tokens: 262144,
+    max_output_tokens: 16384,
   },
   git: {
     repoPath: ".",
+    commitFlags: "",
   },
   apiKey: "",
   endpoint: "https://api.openai.com/v1",
 };
+
 export function loadUserConfig(): Partial<AppConfig> {
   try {
     if (!existsSync(USER_CONFIG_PATH)) return {};
@@ -56,7 +49,6 @@ export function loadUserConfig(): Partial<AppConfig> {
     return {
       ...parsed,
       llm: parsed.llm ? { ...parsed.llm } : undefined,
-      style: parsed.style ? { ...parsed.style } : undefined,
       git: parsed.git ? { ...parsed.git } : undefined,
     };
   } catch {
@@ -73,7 +65,7 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
 export function loadConfig(configPath?: string): AppConfig {
   const configFile =
     configPath ||
-    [".git-repo-committer.yaml", ".git-repo-committer.yml", "config.yaml"].find(
+    [".git-repo-comitter.yaml", ".git-repo-committer.yml", "config.yaml"].find(
       (f) => existsSync(resolve(process.cwd(), f)),
     );
 
@@ -100,7 +92,6 @@ export function loadConfig(configPath?: string): AppConfig {
       ...(userConfig.llm || {}),
       ...(envModel ? { model: envModel } : {}),
     },
-    style: { ...DEFAULT_CONFIG.style, ...(fileConfig.style || {}), ...(userConfig.style || {}) },
     git: { ...DEFAULT_CONFIG.git, ...(fileConfig.git || {}), ...(userConfig.git || {}) },
     apiKey: envApiKey || userConfig.apiKey || fileConfig.apiKey || "",
     endpoint: envEndpoint || userConfig.endpoint || fileConfig.endpoint || DEFAULT_CONFIG.endpoint,

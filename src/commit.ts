@@ -1,9 +1,15 @@
 import { execSync } from "child_process";
 
-export function gitCommit(message: string, repoPath?: string): void {
-  const cwd = repoPath || process.cwd();
+export interface GitCommitOptions {
+  repoPath?: string;
+  commitFlags?: string;
+}
+
+export function gitCommit(message: string, options?: GitCommitOptions): void {
+  const cwd = options?.repoPath || process.cwd();
   const escapedMessage = message.replace(/"/g, '\\"');
-  execSync(`git commit -m "${escapedMessage}"`, { cwd, encoding: "utf-8" });
+  const flags = options?.commitFlags ? ` ${options.commitFlags}` : "";
+  execSync(`git commit -m "${escapedMessage}"${flags}`, { cwd, encoding: "utf-8" });
 }
 
 export function gitAddAll(repoPath?: string): void {

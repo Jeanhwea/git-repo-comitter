@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 
-export function getStagedDiff(repoPath?: string): string {
+function getStagedDiff(repoPath?: string): string {
   const cwd = repoPath || process.cwd();
   try {
     return execSync("git diff --cached", { cwd, encoding: "utf-8" });
@@ -9,7 +9,7 @@ export function getStagedDiff(repoPath?: string): string {
   }
 }
 
-export function getUnstagedDiff(repoPath?: string): string {
+function getUnstagedDiff(repoPath?: string): string {
   const cwd = repoPath || process.cwd();
   try {
     return execSync("git diff", { cwd, encoding: "utf-8" });

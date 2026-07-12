@@ -29,7 +29,7 @@ async function runCommit() {
   const message = await generateCommitMessage(diff, config);
   console.log(`Commit message:\n  ${message}\n`);
 
-  gitCommit(message, config.git.repoPath);
+  gitCommit(message, { repoPath: config.git.repoPath, commitFlags: config.git.commitFlags });
   console.log("Commit successful!");
 }
 
