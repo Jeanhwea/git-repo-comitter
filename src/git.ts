@@ -1,27 +1,24 @@
 import { execSync } from "child_process";
 
-function getStagedDiff(repoPath?: string): string {
-  const cwd = repoPath || process.cwd();
+function getStagedDiff(): string {
   try {
-    return execSync("git diff --cached", { cwd, encoding: "utf-8" });
+    return execSync("git diff --cached", { cwd: process.cwd(), encoding: "utf-8" });
   } catch {
     return "";
   }
 }
 
-function getUnstagedDiff(repoPath?: string): string {
-  const cwd = repoPath || process.cwd();
+function getUnstagedDiff(): string {
   try {
-    return execSync("git diff", { cwd, encoding: "utf-8" });
+    return execSync("git diff", { cwd: process.cwd(), encoding: "utf-8" });
   } catch {
     return "";
   }
 }
 
-export function getAllDiff(repoPath?: string): string {
-  const cwd = repoPath || process.cwd();
-  const staged = getStagedDiff(cwd);
-  const unstaged = getUnstagedDiff(cwd);
+export function getAllDiff(): string {
+  const staged = getStagedDiff();
+  const unstaged = getUnstagedDiff();
 
   const parts: string[] = [];
   if (staged.trim()) {
@@ -33,11 +30,10 @@ export function getAllDiff(repoPath?: string): string {
   return parts.join("\n\n");
 }
 
-export function hasStagedChanges(repoPath?: string): boolean {
-  const cwd = repoPath || process.cwd();
+export function hasStagedChanges(): boolean {
   try {
     const result = execSync("git diff --cached --name-only", {
-      cwd,
+      cwd: process.cwd(),
       encoding: "utf-8",
     });
     return result.trim().length > 0;

@@ -9,17 +9,17 @@ async function runCommit() {
 
   if (!config.apiKey) {
     console.error(
-      "Error: LLM_API_KEY is not set. Please set it in .env or environment variables.",
+      "Error: LLM_API_KEY is not set. Please run `grc init` to configure.",
     );
     process.exit(1);
   }
 
-  if (!hasStagedChanges(config.git.repoPath)) {
+  if (!hasStagedChanges()) {
     console.log("No staged changes found. Staging all changes...");
-    gitAddAll(config.git.repoPath);
+    gitAddAll();
   }
 
-  const diff = getAllDiff(config.git.repoPath);
+  const diff = getAllDiff();
   if (!diff.trim()) {
     console.log("No changes to commit.");
     process.exit(0);
@@ -29,10 +29,7 @@ async function runCommit() {
   const message = await generateCommitMessage(diff, config);
   console.log(`Commit message:\n  ${message}\n`);
 
-  gitCommit(message, {
-    repoPath: config.git.repoPath,
-    commitFlags: config.git.commitFlags,
-  });
+  gitCommit(message);
   console.log("Commit successful!");
 }
 

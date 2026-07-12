@@ -1,11 +1,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { homedir } from "os";
-import YAML from "yaml";
-import dotenv from "dotenv";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
-dotenv.config({ quiet: true });
 
 export interface LLMConfig {
   model: string;
@@ -14,14 +11,8 @@ export interface LLMConfig {
   max_output_tokens: number;
 }
 
-export interface GitConfig {
-  repoPath: string;
-  commitFlags: string;
-}
-
 export interface AppConfig {
   llm: LLMConfig;
-  git: GitConfig;
   apiKey: string;
   endpoint: string;
 }
@@ -32,10 +23,6 @@ const DEFAULT_CONFIG: AppConfig = {
     temperature: 0.7,
     max_input_tokens: 262144,
     max_output_tokens: 16384,
-  },
-  git: {
-    repoPath: ".",
-    commitFlags: "",
   },
   apiKey: "",
   endpoint: "https://api.openai.com/v1",
@@ -49,7 +36,6 @@ export function loadUserConfig(): Partial<AppConfig> {
     return {
       ...parsed,
       llm: parsed.llm ? { ...parsed.llm } : undefined,
-      git: parsed.git ? { ...parsed.git } : undefined,
     };
   } catch {
     return {};
@@ -62,20 +48,7 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
-export function loadConfig(configPath?: string): AppConfig {
-  const configFile =
-    configPath ||
-    [".git-repo-comitter.yaml", ".git-repo-committer.yml", "config.yaml"].find(
-      (f) => existsSync(resolve(process.cwd(), f)),
-    );
-
-  let fileConfig: Partial<AppConfig> = {};
-
-  if (configFile) {
-    const content = readFileSync(resolve(process.cwd(), configFile), "utf-8");
-    fileConfig = YAML.parse(content);
-  }
-
+export function loadConfig(): AppConfig {
   const userConfig = loadUserConfig();
 
   const envModel = process.env.LLM_MODEL;
@@ -84,24 +57,13 @@ export function loadConfig(configPath?: string): AppConfig {
 
   return {
     ...DEFAULT_CONFIG,
-    ...fileConfig,
     ...userConfig,
     llm: {
       ...DEFAULT_CONFIG.llm,
-      ...(fileConfig.llm || {}),
       ...(userConfig.llm || {}),
       ...(envModel ? { model: envModel } : {}),
     },
-    git: {
-      ...DEFAULT_CONFIG.git,
-      ...(fileConfig.git || {}),
-      ...(userConfig.git || {}),
-    },
-    apiKey: envApiKey || userConfig.apiKey || fileConfig.apiKey || "",
-    endpoint:
-      envEndpoint ||
-      userConfig.endpoint ||
-      fileConfig.endpoint ||
-      DEFAULT_CONFIG.endpoint,
+    apiKey: envApiKey || userConfig.apiKey || "",
+    endpoint: envEndpoint || userConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };
 }

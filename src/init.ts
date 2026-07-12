@@ -42,20 +42,10 @@ export async function runInit(): Promise<void> {
     process.exit(1);
   }
 
-  const commitFlags =
-    (
-      await question(
-        `Git commit flags (例如 --no-verify --allow-empty) [${existing.git?.commitFlags || "无"}]: `,
-      )
-    ).trim() ||
-    existing.git?.commitFlags ||
-    "";
-
   saveUserConfig({
     apiKey,
     endpoint,
-    llm: { model, temperature: 0.7, max_output_tokens: 16384 },
-    git: { repoPath: ".", ...(existing.git || {}), commitFlags },
+    llm: { model, temperature: 0.7, max_input_tokens: 262144, max_output_tokens: 16384 },
   });
   console.log("\n配置已保存到 ~/.grc/config.json");
 }
