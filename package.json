@@ -62,6 +62,8 @@
     "vite": "^8.1.4"
   },
   "dependencies": {
+    "@commitlint/lint": "^21.2.0",
+    "@commitlint/types": "^21.2.0",
     "commander": "^15.0.0",
     "dotenv": "^17.4.2",
     "openai": "^6.46.0",
