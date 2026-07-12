@@ -1,8 +1,7 @@
 # git-repo-comitter
 
 基于大语言模型的 Git 提交信息生成工具。
-自动读取 Git 差异，
-调用 OpenAI 兼容 API 生成 Conventional Commits 格式的提交信息并执行提交。
+自动读取 Git 差异，调用 OpenAI 兼容 API 生成 Conventional Commits 格式的提交信息并执行提交。
 
 ## 使用
 
