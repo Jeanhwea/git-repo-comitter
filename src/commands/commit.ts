@@ -13,6 +13,7 @@ export async function runCommit(): Promise<void> {
 
   if (!hasStagedChanges()) {
     console.log("未发现已暂存的变更，正在暂存所有变更...");
+  } else {
     gitAddAll();
   }
 
@@ -24,6 +25,6 @@ export async function runCommit(): Promise<void> {
 
   console.log("正在生成提交信息...\n");
   const message = await generateCommitMessage(diff, config);
-  console.log(`提交信息：\n  ${message}\n`);
+  gitCommit(message);
   console.log("提交成功！");
 }
