@@ -48,11 +48,9 @@ const DEFAULT_CONFIG: AppConfig = {
 export function loadConfig(configPath?: string): AppConfig {
   const configFile =
     configPath ||
-    [
-      ".git-repo-committer.yaml",
-      ".git-repo-committer.yml",
-      "config.yaml",
-    ].find((f) => existsSync(resolve(process.cwd(), f)));
+    [".git-repo-committer.yaml", ".git-repo-committer.yml", "config.yaml"].find(
+      (f) => existsSync(resolve(process.cwd(), f)),
+    );
 
   let fileConfig: Partial<AppConfig> = {};
 
@@ -68,6 +66,9 @@ export function loadConfig(configPath?: string): AppConfig {
     style: { ...DEFAULT_CONFIG.style, ...(fileConfig.style || {}) },
     git: { ...DEFAULT_CONFIG.git, ...(fileConfig.git || {}) },
     apiKey: process.env.LLM_API_KEY || fileConfig.apiKey || "",
-    endpoint: process.env.LLM_ENDPOINT || fileConfig.endpoint || DEFAULT_CONFIG.endpoint,
+    endpoint:
+      process.env.LLM_ENDPOINT ||
+      fileConfig.endpoint ||
+      DEFAULT_CONFIG.endpoint,
   };
 }
