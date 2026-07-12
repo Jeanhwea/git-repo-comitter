@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { version } from "../package.json" with { type: "json" };
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import { runCommit } from "./commands/commit";
 import { runInit } from "./commands/init";
 
@@ -7,10 +8,10 @@ const program = new Command();
 
 program
   .name("grc")
+  .version(getVersion(), "-v, --version", "Display the current version")
   .description(
     "A CLI tool that uses LLM to generate Git commit messages and execute commits",
-  )
-  .version(version, "-v, --version", "Display the current version");
+  );
 
 program
   .command("init")
@@ -21,6 +22,12 @@ program
       process.exit(1);
     });
   });
+
+function getVersion(): string {
+  const pkgPath = resolve(__dirname, "..", "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  return pkg.version;
+}
 
 export function runCli(): void {
   const args = process.argv.slice(2);

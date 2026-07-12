@@ -26,6 +26,7 @@ export default defineConfig({
         "os",
         "child_process",
         "readline/promises",
+        "../package.json",
       ],
     },
   },
