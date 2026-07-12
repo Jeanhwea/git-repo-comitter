@@ -37,9 +37,11 @@ export async function generateCommitMessage(
     ],
   });
 
-  const message = response.choices[0]?.message?.content?.trim();
+  const message = response.choices?.[0]?.message?.content?.trim();
   if (!message) {
-    throw new Error("LLM returned an empty commit message.");
+    throw new Error(
+      `LLM returned an empty commit message. Response: ${JSON.stringify(response)}`,
+    );
   }
   return message;
 }
