@@ -39,7 +39,9 @@ const program = new Command();
 
 program
   .name("grc")
-  .description("A CLI tool that uses LLM to generate Git commit messages and execute commits")
+  .description(
+    "A CLI tool that uses LLM to generate Git commit messages and execute commits",
+  )
   .version(version, "-v, --version", "Display the current version");
 
 program
