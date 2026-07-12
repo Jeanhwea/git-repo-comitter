@@ -9,7 +9,8 @@ const program = new Command();
 program
   .name("grc")
   .version(getVersion(), "-v, --version", "显示当前版本")
-  .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具");
+  .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具")
+  .helpOption("-h, --help", "显示帮助信息");
 
 program
   .command("init")
