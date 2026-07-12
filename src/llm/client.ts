@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import type { AppConfig } from "./config";
-import { extractContent } from "./util";
+import type { AppConfig } from "../config/types";
+import { extractContent } from "../utils";
 
 const SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。根据提供的 Git diff，生成简洁且描述准确的提交信息。
 
@@ -52,7 +52,7 @@ export async function generateCommitMessage(
   const response = await client.chat.completions.create({
     model: config.llm.model,
     temperature: config.llm.temperature,
-    max_tokens: config.llm.max_output_tokens,
+    max_tokens: config.llm.maxOutputTokens,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       {

@@ -1,32 +1,9 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 import { homedir } from "os";
+import { DEFAULT_CONFIG, type AppConfig } from "./types";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
-
-export interface LLMConfig {
-  model: string;
-  temperature: number;
-  max_input_tokens: number;
-  max_output_tokens: number;
-}
-
-export interface AppConfig {
-  llm: LLMConfig;
-  apiKey: string;
-  endpoint: string;
-}
-
-const DEFAULT_CONFIG: AppConfig = {
-  llm: {
-    model: "deepseek-v4-flash",
-    temperature: 0.7,
-    max_input_tokens: 262144,
-    max_output_tokens: 16384,
-  },
-  apiKey: "",
-  endpoint: "https://api.openai.com/v1",
-};
 
 export function loadUserConfig(): Partial<AppConfig> {
   try {

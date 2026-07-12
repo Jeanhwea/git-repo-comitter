@@ -1,5 +1,5 @@
-import { loadUserConfig, saveUserConfig } from "./config";
-import { question } from "./util";
+import { loadUserConfig, saveUserConfig } from "../config/loader";
+import { question } from "../utils";
 
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");
@@ -40,8 +40,8 @@ export async function runInit(): Promise<void> {
     llm: {
       model,
       temperature: 0.7,
-      max_input_tokens: 262144,
-      max_output_tokens: 16384,
+      maxInputTokens: 262144,
+      maxOutputTokens: 16384,
     },
   });
   console.log("\n配置已保存到 ~/.grc/config.json");
