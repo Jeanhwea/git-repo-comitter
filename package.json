@@ -1,6 +1,6 @@
 {
   "name": "git-repo-comitter",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A CLI tool that uses LLM to generate Git commit messages and execute commits",
   "type": "module",
   "main": "dist/index.cjs",
