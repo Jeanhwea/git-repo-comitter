@@ -8,6 +8,13 @@ import { gitCommit, gitAddAll } from "./commit";
 async function main() {
   const config = loadConfig();
 
+  if (!config.apiKey) {
+    console.error(
+      "Error: LLM_API_KEY is not set. Please set it in .env or environment variables.",
+    );
+    process.exit(1);
+  }
+
   if (!hasStagedChanges(config.git.repoPath)) {
     console.log("No staged changes found. Staging all changes...");
     gitAddAll(config.git.repoPath);
