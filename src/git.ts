@@ -2,7 +2,10 @@ import { execSync } from "child_process";
 
 function getStagedDiff(): string {
   try {
-    return execSync("git diff --cached", { cwd: process.cwd(), encoding: "utf-8" });
+    return execSync("git diff --cached", {
+      cwd: process.cwd(),
+      encoding: "utf-8",
+    });
   } catch {
     return "";
   }

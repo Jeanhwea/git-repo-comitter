@@ -37,7 +37,12 @@ export async function runInit(): Promise<void> {
   saveUserConfig({
     apiKey,
     endpoint,
-    llm: { model, temperature: 0.7, max_input_tokens: 262144, max_output_tokens: 16384 },
+    llm: {
+      model,
+      temperature: 0.7,
+      max_input_tokens: 262144,
+      max_output_tokens: 16384,
+    },
   });
   console.log("\n配置已保存到 ~/.grc/config.json");
 }
