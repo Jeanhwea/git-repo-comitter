@@ -6,6 +6,7 @@ import { runInit } from "./commands/init";
 
 const program = new Command();
 
+
 program
   .name("grc")
   .version(getVersion(), "-v, --version", "显示当前版本")
