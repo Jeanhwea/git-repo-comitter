@@ -1,13 +1,5 @@
-import { createInterface } from "readline/promises";
 import { loadUserConfig, saveUserConfig } from "./config";
-
-function question(query: string): Promise<string> {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  return rl.question(query).finally(() => rl.close());
-}
+import { question } from "./util";
 
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");
