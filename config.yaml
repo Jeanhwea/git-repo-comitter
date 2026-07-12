@@ -1,0 +1,16 @@
+# Git Repo Committer 配置文件
+
+# 大模型配置
+llm:
+  model: "gpt-4"
+  temperature: 0.7
+  max_tokens: 256
+
+# 生成风格模板
+style:
+  language: "zh-CN"
+  template: "conventional"  # conventional | conventional-commit | custom
+
+# Git 目录路径（默认为当前目录）
+git:
+  repoPath: "."

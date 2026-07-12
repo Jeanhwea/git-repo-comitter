@@ -1,11 +1,50 @@
 {
   "name": "git-repo-comitter",
   "version": "0.1.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "description": "A CLI tool that uses LLM to generate Git commit messages and execute commits",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "bin": {
+    "git-repo-comitter": "dist/index.cjs"
   },
-  "keywords": [],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "llm",
+    "ai",
+    "openai"
+  ],
   "author": "",
-  "description": ""
+  "license": "unlicense",
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.4"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "openai": "^6.46.0",
+    "yaml": "^2.9.0"
+  }
 }
