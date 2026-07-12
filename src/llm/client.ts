@@ -39,9 +39,7 @@ export async function generateCommitMessage(
   config: AppConfig,
 ): Promise<string> {
   if (!config.apiKey) {
-    throw new Error(
-      "LLM_API_KEY is not set. Please set it in .env or environment variables.",
-    );
+    throw new Error("LLM_API_KEY 未设置，请在 .env 或环境变量中配置。");
   }
 
   const client = new OpenAI({
@@ -65,7 +63,7 @@ export async function generateCommitMessage(
   const message = extractContent(response);
   if (!message) {
     throw new Error(
-      `LLM returned an empty commit message. Response: ${JSON.stringify(response)}`,
+      `LLM 返回了空的提交信息。响应内容：${JSON.stringify(response)}`,
     );
   }
   return message;

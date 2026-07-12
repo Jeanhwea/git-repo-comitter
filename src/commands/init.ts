@@ -9,7 +9,7 @@ export async function runInit(): Promise<void> {
   const endpoint =
     (
       await question(
-        `大模型链接 (API 地址) [${existing.endpoint || "https://api.openai.com/v1"}]: `,
+        `大模型链接（API 地址）[${existing.endpoint || "https://api.openai.com/v1"}]: `,
       )
     ).trim() ||
     existing.endpoint ||
@@ -26,7 +26,7 @@ export async function runInit(): Promise<void> {
 
   const apiKey =
     (
-      await question(`API Key [${existing.apiKey ? "***" : "(必填)"}]: `)
+      await question(`API Key [${existing.apiKey ? "***" : "（必填）"}]: `)
     ).trim() || existing.apiKey;
 
   if (!apiKey) {

@@ -8,17 +8,15 @@ const program = new Command();
 
 program
   .name("grc")
-  .version(getVersion(), "-v, --version", "Display the current version")
-  .description(
-    "A CLI tool that uses LLM to generate Git commit messages and execute commits",
-  );
+  .version(getVersion(), "-v, --version", "显示当前版本")
+  .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具");
 
 program
   .command("init")
-  .description("Interactive LLM configuration initialization")
+  .description("交互式 LLM 配置初始化")
   .action(() => {
     runInit().catch((err: Error) => {
-      console.error("Error:", err.message);
+      console.error("错误:", err.message);
       process.exit(1);
     });
   });
@@ -34,7 +32,7 @@ export function runCli(): void {
 
   if (args.length === 0) {
     runCommit().catch((err: Error) => {
-      console.error("Error:", err.message);
+      console.error("错误:", err.message);
       process.exit(1);
     });
     return;

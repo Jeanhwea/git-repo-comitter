@@ -6,6 +6,7 @@ export function gitCommit(message: string): void {
     cwd: process.cwd(),
     encoding: "utf-8",
   });
+  console.log(`提交信息：\n  ${message}\n`);
 }
 
 export function gitAddAll(): void {
