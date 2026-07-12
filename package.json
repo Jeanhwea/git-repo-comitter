@@ -22,8 +22,20 @@
     "ai",
     "openai"
   ],
-  "author": "",
+  "author": "jeanhwea",
   "license": "unlicense",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeanhwea/git-repo-comitter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Jeanhwea/git-repo-comitter/issues"
+  },
+  "homepage": "https://github.com/Jeanhwea/git-repo-comitter#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
   "lint-staged": {
     "*.ts": [
       "prettier --write",
