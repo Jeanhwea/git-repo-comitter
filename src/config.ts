@@ -92,8 +92,16 @@ export function loadConfig(configPath?: string): AppConfig {
       ...(userConfig.llm || {}),
       ...(envModel ? { model: envModel } : {}),
     },
-    git: { ...DEFAULT_CONFIG.git, ...(fileConfig.git || {}), ...(userConfig.git || {}) },
+    git: {
+      ...DEFAULT_CONFIG.git,
+      ...(fileConfig.git || {}),
+      ...(userConfig.git || {}),
+    },
     apiKey: envApiKey || userConfig.apiKey || fileConfig.apiKey || "",
-    endpoint: envEndpoint || userConfig.endpoint || fileConfig.endpoint || DEFAULT_CONFIG.endpoint,
+    endpoint:
+      envEndpoint ||
+      userConfig.endpoint ||
+      fileConfig.endpoint ||
+      DEFAULT_CONFIG.endpoint,
   };
 }
