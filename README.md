@@ -6,7 +6,6 @@
 基于大语言模型的 Git 提交信息生成工具。自动读取 Git 差异，调用 OpenAI 兼容 API 生成 [Conventional Commits](https://www.conventionalcommits.org/) 格式的提交信息并执行提交。
 
 ## 特性
-
 - **自动差异收集** — 自动检测暂存/未暂存的变更，合并为完整 diff 提交给 LLM
 - **一站式配置** — 交互式初始化向导，配置持久化到 `~/.grc/config.json`
 - **中文提交信息** — 内置 Conventional Commits 中文 prompt，生成中文描述
