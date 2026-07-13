@@ -16,3 +16,11 @@ export function execGit(args: string[], options: GitExecOptions = {}): string {
     throw err;
   }
 }
+
+export function isGitRepo(): boolean {
+  return (
+    execGit(["rev-parse", "--is-inside-work-tree"], {
+      tolerateError: true,
+    }).trim() === "true"
+  );
+}

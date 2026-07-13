@@ -3,6 +3,7 @@ import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
+import { isGitRepo } from "../git/runner";
 import { generateCommitMessageBatched } from "../llm/batch";
 
 export interface CommitOptions {
@@ -41,6 +42,11 @@ function getChanges(): string | null {
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const config = ensureConfig();
+  if (!isGitRepo()) {
+    throw new CliError(
+      "当前目录不是 git 仓库，请确保在 git 仓库中执行 grc 命令",
+    );
+  }
   stageOrProceed(!!options.stagedOnly);
   const diff = getChanges();
   if (!diff) {
