@@ -39,7 +39,7 @@ export function validateCommitMessage(message: string): ValidationResult {
     };
   }
 
-  const { type, description } = match.groups!;
+  const { type } = match.groups!;
 
   // type must be one of the allowed types
   if (!ALLOWED_TYPES.includes(type as AllowedType)) {
