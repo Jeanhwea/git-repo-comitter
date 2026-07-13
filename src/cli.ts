@@ -27,7 +27,8 @@ program
   .name("grc")
   .version(getVersion(), "-v, --version", "显示当前版本")
   .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具")
-  .helpOption("-h, --help", "显示帮助信息");
+  .helpOption("-h, --help", "显示帮助信息")
+  .option("-s, --staged-only", "仅提交已暂存的变更");
 
 program
   .command("init")
@@ -36,13 +37,11 @@ program
     runInit().catch(handleCliError);
   });
 
+program
+  .action((options) => {
+    runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
+  });
+
 export function runCli(): void {
-  const args = process.argv.slice(2);
-
-  if (args.length === 0) {
-    runCommit().catch(handleCliError);
-    return;
-  }
-
   program.parse(process.argv);
 }

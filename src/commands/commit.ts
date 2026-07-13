@@ -5,6 +5,10 @@ import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
 import { generateCommitMessage } from "../llm/client";
 
+export interface CommitOptions {
+  stagedOnly?: boolean;
+}
+
 function ensureConfig(): AppConfig {
   const config = loadConfig();
   if (!config.apiKey) {
@@ -13,7 +17,14 @@ function ensureConfig(): AppConfig {
   return config;
 }
 
-function stageOrProceed(): void {
+function stageOrProceed(stagedOnly: boolean): void {
+  if (stagedOnly) {
+    if (!hasStagedChanges()) {
+      throw new CliError("没有已暂存的变更，请先使用 git add 暂存文件。");
+    }
+    console.log("仅提交暂存变更...");
+    return;
+  }
   if (hasStagedChanges()) {
     console.log("检出已有暂存变更，直接提交...");
   } else {
@@ -28,9 +39,9 @@ function getChanges(): string | null {
   return diff;
 }
 
-export async function runCommit(): Promise<void> {
+export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const config = ensureConfig();
-  stageOrProceed();
+  stageOrProceed(!!options.stagedOnly);
   const diff = getChanges();
   if (!diff) {
     console.log("没有可提交的变更。");
