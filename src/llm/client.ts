@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "../config/types";
-import { extractContent } from "../utils/llm";
+import { extractContent } from "./response";
 import { validateCommitMessage } from "./checker";
 
 const SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。根据提供的 Git diff，生成简洁且描述准确的提交信息。

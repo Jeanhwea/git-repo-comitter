@@ -4,12 +4,26 @@ import { resolve } from "path";
 
 import { runCommit } from "./commands/commit";
 import { runInit } from "./commands/init";
+import { CliError } from "./errors";
 
 export function getVersion(): string {
   const pkgPath = resolve(__dirname, "..", "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   return pkg.version;
 }
+
+function handleCliError(err: unknown): never {
+  if (err instanceof CliError) {
+    console.error("错误:", err.message);
+    process.exit(err.exitCode);
+  }
+  console.error(
+    "意外错误:",
+    err instanceof Error ? err.message : String(err),
+  );
+  process.exit(1);
+}
+
 const program = new Command();
 
 program
@@ -22,20 +36,14 @@ program
   .command("init")
   .description("交互式 LLM 配置初始化")
   .action(() => {
-    runInit().catch((err: Error) => {
-      console.error("错误:", err.message);
-      process.exit(1);
-    });
+    runInit().catch(handleCliError);
   });
 
 export function runCli(): void {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    runCommit().catch((err: Error) => {
-      console.error("错误:", err.message);
-      process.exit(1);
-    });
+    runCommit().catch(handleCliError);
     return;
   }
 

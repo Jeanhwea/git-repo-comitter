@@ -1,4 +1,5 @@
 import { loadUserConfig, saveUserConfig } from "../config/loader";
+import { CliError } from "../errors";
 import { question } from "../utils/cli";
 
 export async function runInit(): Promise<void> {
@@ -30,8 +31,7 @@ export async function runInit(): Promise<void> {
     ).trim() || existing.apiKey;
 
   if (!apiKey) {
-    console.error("\n错误：API Key 不能为空。");
-    process.exit(1);
+    throw new CliError("API Key 不能为空。");
   }
 
   saveUserConfig({

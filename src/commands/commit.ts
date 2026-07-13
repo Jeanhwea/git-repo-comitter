@@ -1,5 +1,6 @@
 import { loadConfig } from "../config/loader";
 import type { AppConfig } from "../config/types";
+import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
 import { generateCommitMessage } from "../llm/client";
@@ -7,8 +8,7 @@ import { generateCommitMessage } from "../llm/client";
 function ensureConfig(): AppConfig {
   const config = loadConfig();
   if (!config.apiKey) {
-    console.error("错误：LLM_API_KEY 未设置，请运行 `grc init` 进行配置。");
-    process.exit(1);
+    throw new CliError("LLM_API_KEY 未设置，请运行 `grc init` 进行配置。");
   }
   return config;
 }
@@ -22,12 +22,9 @@ function stageOrProceed(): void {
   }
 }
 
-function getChanges(): string {
+function getChanges(): string | null {
   const diff = getAllDiff();
-  if (!diff.trim()) {
-    console.log("没有可提交的变更。");
-    process.exit(0);
-  }
+  if (!diff.trim()) return null;
   return diff;
 }
 
@@ -35,6 +32,10 @@ export async function runCommit(): Promise<void> {
   const config = ensureConfig();
   stageOrProceed();
   const diff = getChanges();
+  if (!diff) {
+    console.log("没有可提交的变更。");
+    return;
+  }
   console.log("正在生成提交信息...\n");
   const message = await generateCommitMessage(diff, config);
   gitCommit(message);
