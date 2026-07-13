@@ -8,7 +8,7 @@ import { generateCommitMessage } from "../llm/client";
 function ensureConfig(): AppConfig {
   const config = loadConfig();
   if (!config.apiKey) {
-    throw new CliError("LLM_API_KEY 未设置，请运行 `grc init` 进行配置。");
+    throw new CliError("API Key 未设置，请运行 `grc init` 进行配置。");
   }
   return config;
 }
