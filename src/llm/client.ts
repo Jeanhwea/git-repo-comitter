@@ -1,4 +1,5 @@
 import { Configuration, OpenAIApi } from "openai";
+import type { ChatCompletionRequestMessageRoleEnum } from "openai/api";
 
 import type { AppConfig } from "../config/types";
 import { validateCommitMessage } from "./checker";
@@ -56,7 +57,7 @@ export async function generateCommitMessage(
 ): Promise<string> {
   const client = createClient(config);
 
-  const messages: Array<{ role: string; content: string }> = [
+  const messages: Array<{ role: ChatCompletionRequestMessageRoleEnum; content: string }> = [
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
@@ -106,58 +107,3 @@ export async function generateCommitMessage(
   throw new Error("意外的错误：重试循环结束后仍未能生成有效提交信息");
 }
 
-export async function generateCommitMessage(
-  diff: string,
-  config: AppConfig,
-): Promise<string> {
-  const client = createClient(config);
-
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: `以下是 Git diff 内容：\n\n${diff}`,
-    },
-  ];
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const response = await client.chat.completions.create({
-      model: config.llm.model,
-      temperature: config.llm.temperature,
-      max_tokens: config.llm.maxOutputTokens,
-      messages,
-    });
-
-    const message = extractContent(response);
-    if (!message) {
-      throw new Error(
-        `LLM 返回了空的提交信息。响应内容：${JSON.stringify(response)}`,
-      );
-    }
-
-    const validation = await validateCommitMessage(message);
-    if (validation.valid) {
-      return message;
-    }
-
-    if (attempt < MAX_RETRIES) {
-      console.log(
-        `  提交信息格式校验未通过（第 ${attempt} 次）: ${validation.reason}`,
-      );
-      console.log("  正在重新生成...\n");
-      messages.push(
-        { role: "assistant", content: message },
-        {
-          role: "user",
-          content: `生成的提交信息格式不符合规范：${validation.reason}。请严格按照 Conventional Commits 格式重新生成。`,
-        },
-      );
-    } else {
-      throw new Error(
-        `LLM 提交信息格式校验失败（已重试 ${MAX_RETRIES} 次）: ${validation.reason}\n最后一次生成的提交信息：\n${message}`,
-      );
-    }
-  }
-
-  throw new Error("意外的错误：重试循环结束后仍未能生成有效提交信息");
-}

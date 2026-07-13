@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+import { Configuration, OpenAIApi } from "openai";
+import type { ChatCompletionRequestMessageRoleEnum } from "openai/api";
 
 import type { AppConfig } from "../config/types";
 import { validateCommitMessage } from "./checker";
@@ -55,7 +56,7 @@ async function generatePartialMessage(
   config: AppConfig,
 ): Promise<string> {
   const client = createClient(config);
-  const response = await client.chat.completions.create({
+  const response = await client.createChatCompletion({
     model: config.llm.model,
     temperature: config.llm.temperature,
     max_tokens: config.llm.maxOutputTokens,
@@ -67,7 +68,7 @@ async function generatePartialMessage(
       },
     ],
   });
-  const content = extractContent(response);
+  const content = extractContent(response.data);
   if (!content) {
     throw new Error("LLM 在处理分批 diff 时返回了空内容。");
   }
@@ -101,7 +102,7 @@ async function mergePartialMessages(
     parts.join("\n\n") +
     (omitted > 0 ? `\n\n[... 前面 ${omitted} 个批次已省略 ...]` : "");
 
-  const response = await client.chat.completions.create({
+  const response = await client.createChatCompletion({
     model: config.llm.model,
     temperature: config.llm.temperature,
     max_tokens: config.llm.maxOutputTokens,
@@ -110,7 +111,7 @@ async function mergePartialMessages(
       { role: "user", content: userContent },
     ],
   });
-  const content = extractContent(response);
+  const content = extractContent(response.data);
   if (!content) {
     throw new Error("LLM 在合并提交信息时返回了空内容。");
   }
@@ -122,10 +123,10 @@ async function validateWithRetry(
   partialMessages: string[],
   config: AppConfig,
 ): Promise<string> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: MERGE_SYSTEM_PROMPT },
+  const messages: Array<{ role: ChatCompletionRequestMessageRoleEnum; content: string }> = [
+    { role: "system" as ChatCompletionRequestMessageRoleEnum, content: MERGE_SYSTEM_PROMPT },
     {
-      role: "user",
+      role: "user" as ChatCompletionRequestMessageRoleEnum,
       content: partialMessages
         .map((msg, i) => `--- 部分 ${i + 1} ---\n${msg}`)
         .join("\n\n"),
@@ -150,13 +151,13 @@ async function validateWithRetry(
       });
 
       const client = createClient(config);
-      const response = await client.chat.completions.create({
+      const response = await client.createChatCompletion({
         model: config.llm.model,
         temperature: config.llm.temperature,
         max_tokens: config.llm.maxOutputTokens,
         messages,
       });
-      lastMessage = extractContent(response);
+      lastMessage = extractContent(response.data);
       if (!lastMessage) {
         throw new Error("LLM 在重试合并时返回了空内容。");
       }
