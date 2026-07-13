@@ -41,10 +41,12 @@ grc init
 grc
 ```
 
-## 安装
+## 源码安装
 
 ```bash
-npx grc --version
+pnpm i
+pnpm build
+npm i -g .
 ```
 
 本地开发：
