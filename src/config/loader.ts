@@ -29,26 +29,8 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
-function envNumber(value: string | undefined): number | undefined {
-  if (value === undefined || value === "") return undefined;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : undefined;
-}
-
 export function loadConfig(): AppConfig {
   const userConfig = loadUserConfig();
-  const env = process.env;
-
-  const envLlmOverrides: Partial<AppConfig["llm"]> = {};
-  if (env.LLM_MODEL) envLlmOverrides.model = env.LLM_MODEL;
-  const temperature = envNumber(env.LLM_TEMPERATURE);
-  if (temperature !== undefined) envLlmOverrides.temperature = temperature;
-  const maxInputTokens = envNumber(env.LLM_MAX_INPUT_TOKENS);
-  if (maxInputTokens !== undefined)
-    envLlmOverrides.maxInputTokens = maxInputTokens;
-  const maxOutputTokens = envNumber(env.LLM_MAX_OUTPUT_TOKENS);
-  if (maxOutputTokens !== undefined)
-    envLlmOverrides.maxOutputTokens = maxOutputTokens;
 
   return {
     ...DEFAULT_CONFIG,
@@ -56,9 +38,8 @@ export function loadConfig(): AppConfig {
     llm: {
       ...DEFAULT_CONFIG.llm,
       ...(userConfig.llm || {}),
-      ...envLlmOverrides,
     },
-    apiKey: env.LLM_API_KEY || userConfig.apiKey || "",
-    endpoint: env.LLM_ENDPOINT || userConfig.endpoint || DEFAULT_CONFIG.endpoint,
+    apiKey: userConfig.apiKey || "",
+    endpoint: userConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };
 }

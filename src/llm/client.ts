@@ -43,7 +43,7 @@ export async function generateCommitMessage(
   config: AppConfig,
 ): Promise<string> {
   if (!config.apiKey) {
-    throw new Error("LLM_API_KEY 未设置，请在 .env 或环境变量中配置。");
+    throw new Error("apiKey 未设置，请运行 `grc init` 进行配置。");
   }
 
   const client = new OpenAI({
