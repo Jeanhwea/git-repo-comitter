@@ -57,7 +57,10 @@ export async function generateCommitMessage(
 ): Promise<string> {
   const client = createClient(config);
 
-  const messages: Array<{ role: ChatCompletionRequestMessageRoleEnum; content: string }> = [
+  const messages: Array<{
+    role: ChatCompletionRequestMessageRoleEnum;
+    content: string;
+  }> = [
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
@@ -106,4 +109,3 @@ export async function generateCommitMessage(
 
   throw new Error("意外的错误：重试循环结束后仍未能生成有效提交信息");
 }
-

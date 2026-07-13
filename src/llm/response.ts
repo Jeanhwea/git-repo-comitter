@@ -1,6 +1,5 @@
 import type { CreateChatCompletionResponse } from "openai/api";
 
-
 export function extractContent(
   response: CreateChatCompletionResponse | string,
 ): string {
@@ -9,4 +8,3 @@ export function extractContent(
   if (typeof content === "string") return content.trim();
   return "";
 }
-

@@ -1,4 +1,3 @@
-import { Configuration, OpenAIApi } from "openai";
 import type { ChatCompletionRequestMessageRoleEnum } from "openai/api";
 
 import type { AppConfig } from "../config/types";
@@ -123,8 +122,14 @@ async function validateWithRetry(
   partialMessages: string[],
   config: AppConfig,
 ): Promise<string> {
-  const messages: Array<{ role: ChatCompletionRequestMessageRoleEnum; content: string }> = [
-    { role: "system" as ChatCompletionRequestMessageRoleEnum, content: MERGE_SYSTEM_PROMPT },
+  const messages: Array<{
+    role: ChatCompletionRequestMessageRoleEnum;
+    content: string;
+  }> = [
+    {
+      role: "system" as ChatCompletionRequestMessageRoleEnum,
+      content: MERGE_SYSTEM_PROMPT,
+    },
     {
       role: "user" as ChatCompletionRequestMessageRoleEnum,
       content: partialMessages
