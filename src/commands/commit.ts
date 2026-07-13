@@ -3,7 +3,7 @@ import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
-import { generateCommitMessage } from "../llm/client";
+import { generateCommitMessageBatched } from "../llm/batch";
 
 export interface CommitOptions {
   stagedOnly?: boolean;
@@ -48,7 +48,13 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     return;
   }
   console.log("正在生成提交信息...\n");
-  const message = await generateCommitMessage(diff, config);
+  const { message, batchCount } = await generateCommitMessageBatched(
+    diff,
+    config,
+  );
+  if (batchCount > 1) {
+    console.log(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
+  }
   gitCommit(message);
   console.log(`提交信息：\n  ${message}\n`);
   console.log("提交成功！");
