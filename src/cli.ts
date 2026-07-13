@@ -17,10 +17,7 @@ function handleCliError(err: unknown): never {
     console.error("错误:", err.message);
     process.exit(err.exitCode);
   }
-  console.error(
-    "意外错误:",
-    err instanceof Error ? err.message : String(err),
-  );
+  console.error("意外错误:", err instanceof Error ? err.message : String(err));
   process.exit(1);
 }
 
