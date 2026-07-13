@@ -1,13 +1,13 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "../config/types";
+import { validateCommitMessage } from "./checker";
 import {
-  createClient,
-  generateCommitMessage,
   MAX_RETRIES,
   SYSTEM_PROMPT,
+  createClient,
+  generateCommitMessage,
 } from "./client";
-import { validateCommitMessage } from "./checker";
 import { extractContent } from "./response";
 import { groupIntoBatches, parseDiffBlocks } from "./split";
 import { estimateTokens } from "./tokens";
@@ -127,9 +127,7 @@ async function validateWithRetry(
     {
       role: "user",
       content: partialMessages
-        .map(
-          (msg, i) => `--- 部分 ${i + 1} ---\n${msg}`,
-        )
+        .map((msg, i) => `--- 部分 ${i + 1} ---\n${msg}`)
         .join("\n\n"),
     },
     { role: "assistant", content: initialMessage },
