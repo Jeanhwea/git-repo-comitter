@@ -1,19 +1,30 @@
 import { loadConfig } from "../config/loader";
 import type { AppConfig } from "../config/types";
+import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
 import { getAllDiff, hasStagedChanges } from "../git/diff";
-import { generateCommitMessage } from "../llm/client";
+import { generateCommitMessageBatched } from "../llm/batch";
+
+export interface CommitOptions {
+  stagedOnly?: boolean;
+}
 
 function ensureConfig(): AppConfig {
   const config = loadConfig();
   if (!config.apiKey) {
-    console.error("错误：LLM_API_KEY 未设置，请运行 `grc init` 进行配置。");
-    process.exit(1);
+    throw new CliError("API Key 未设置，请运行 `grc init` 进行配置。");
   }
   return config;
 }
 
-function stageOrProceed(): void {
+function stageOrProceed(stagedOnly: boolean): void {
+  if (stagedOnly) {
+    if (!hasStagedChanges()) {
+      throw new CliError("没有已暂存的变更，请先使用 git add 暂存文件。");
+    }
+    console.log("仅提交暂存变更...");
+    return;
+  }
   if (hasStagedChanges()) {
     console.log("检出已有暂存变更，直接提交...");
   } else {
@@ -22,21 +33,28 @@ function stageOrProceed(): void {
   }
 }
 
-function getChanges(): string {
+function getChanges(): string | null {
   const diff = getAllDiff();
-  if (!diff.trim()) {
-    console.log("没有可提交的变更。");
-    process.exit(0);
-  }
+  if (!diff.trim()) return null;
   return diff;
 }
 
-export async function runCommit(): Promise<void> {
+export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const config = ensureConfig();
-  stageOrProceed();
+  stageOrProceed(!!options.stagedOnly);
   const diff = getChanges();
+  if (!diff) {
+    console.log("没有可提交的变更。");
+    return;
+  }
   console.log("正在生成提交信息...\n");
-  const message = await generateCommitMessage(diff, config);
+  const { message, batchCount } = await generateCommitMessageBatched(
+    diff,
+    config,
+  );
+  if (batchCount > 1) {
+    console.log(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
+  }
   gitCommit(message);
   console.log(`提交信息：\n  ${message}\n`);
   console.log("提交成功！");

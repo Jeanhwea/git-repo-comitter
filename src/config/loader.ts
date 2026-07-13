@@ -7,15 +7,18 @@ import { type AppConfig, DEFAULT_CONFIG } from "./types";
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 
 export function loadUserConfig(): Partial<AppConfig> {
+  if (!existsSync(USER_CONFIG_PATH)) return {};
   try {
-    if (!existsSync(USER_CONFIG_PATH)) return {};
     const raw = readFileSync(USER_CONFIG_PATH, "utf-8");
     const parsed = JSON.parse(raw);
     return {
       ...parsed,
       llm: parsed.llm ? { ...parsed.llm } : undefined,
     };
-  } catch {
+  } catch (err) {
+    console.warn(
+      `警告：解析 ${USER_CONFIG_PATH} 失败，已忽略用户配置。原因：${err instanceof Error ? err.message : String(err)}`,
+    );
     return {};
   }
 }
@@ -29,19 +32,14 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
 export function loadConfig(): AppConfig {
   const userConfig = loadUserConfig();
 
-  const envModel = process.env.LLM_MODEL;
-  const envApiKey = process.env.LLM_API_KEY;
-  const envEndpoint = process.env.LLM_ENDPOINT;
-
   return {
     ...DEFAULT_CONFIG,
     ...userConfig,
     llm: {
       ...DEFAULT_CONFIG.llm,
       ...(userConfig.llm || {}),
-      ...(envModel ? { model: envModel } : {}),
     },
-    apiKey: envApiKey || userConfig.apiKey || "",
-    endpoint: envEndpoint || userConfig.endpoint || DEFAULT_CONFIG.endpoint,
+    apiKey: userConfig.apiKey || "",
+    endpoint: userConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };
 }

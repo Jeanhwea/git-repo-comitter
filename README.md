@@ -18,12 +18,11 @@ D:\path\to\repo> grc
 正在生成提交信息...
 
 提交信息：
-  docs(readme): 更新 README 文档结构和配置优先级说明
+  docs(readme): 更新 README 文档结构和配置说明
 
-- 移除“模型无关”特性描述
-- 简化配置优先级为两层：用户配置和系统环境变量
-- 调整环境变量表格格式，默认端点改为 localhost
-- 将“快速开始”章节提前，移除“技术栈”和“许可”章节
+- 移除环境变量配置方式，统一使用 config.json
+- 简化配置优先级为单一配置源
+- 调整默认端点为 https://api.openai.com/v1
 
 提交成功！
 
@@ -57,18 +56,24 @@ pnpm build && node dist/index.cjs
 
 ## 使用
 
-### 配置优先级
+### 配置
 
-1. 用户配置文件 `~/.grc/config.json`
-2. 系统环境变量
+所有配置通过 `~/.grc/config.json` 管理，不再支持环境变量。
 
-### 环境变量
+### 配置文件结构
 
-| 变量           | 说明     | 默认值                     |
-|----------------|----------|----------------------------|
-| `LLM_ENDPOINT` | API 端点 | `https://localhost/api/v1` |
-| `LLM_MODEL`    | 模型名称 | `deepseek-v4-flash`        |
-| `LLM_API_KEY`  | API 密钥 |                            |
+```json
+{
+  "endpoint": "https://api.openai.com/v1",
+  "apiKey": "sk-xxx",
+  "llm": {
+    "model": "deepseek-v4-flash",
+    "temperature": 0.7,
+    "maxInputTokens": 262144,
+    "maxOutputTokens": 16384
+  }
+}
+```
 
 ### 交互式初始化
 
