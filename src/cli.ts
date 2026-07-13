@@ -37,10 +37,9 @@ program
     runInit().catch(handleCliError);
   });
 
-program
-  .action((options) => {
-    runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
-  });
+program.action((options) => {
+  runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
+});
 
 export function runCli(): void {
   program.parse(process.argv);
