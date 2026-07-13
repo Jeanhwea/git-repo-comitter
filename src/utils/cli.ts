@@ -1,9 +1,14 @@
-import { createInterface } from "readline/promises";
+import { createInterface } from "readline";
 
 export function question(query: string): Promise<string> {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
+  return new Promise<string>((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
   });
-  return rl.question(query).finally(() => rl.close());
 }
