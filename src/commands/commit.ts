@@ -31,12 +31,8 @@ function stageOrProceed(stagedOnly: boolean): void {
     console.log("仅提交暂存变更...");
     return;
   }
-  if (hasStagedChanges()) {
-    console.log("检出已有暂存变更，直接提交...");
-  } else {
-    console.log("暂存所有变更...");
-    gitAddAll();
-  }
+  console.log("暂存所有变更...");
+  gitAddAll();
 }
 
 function getChanges(): string | null {

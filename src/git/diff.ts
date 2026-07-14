@@ -77,10 +77,20 @@ export function getAllDiff(): string {
 
 /**
  * 获取新增文件的路径及其内容，用于大模型审查。
- * 返回 path 和 content 的数组。
+ * 支持 staged 和 unstaged 的新增文件。
  */
-export function getNewFileContents(): { path: string; content: string }[] {
-  const newFiles = getStagedNewFiles();
+export function getNewFileContents(
+  onlyStaged: boolean = false,
+): { path: string; content: string }[] {
+  const stagedNewFiles = getStagedNewFiles();
+  const newFiles = onlyStaged
+    ? stagedNewFiles
+    : [
+        ...stagedNewFiles,
+        ...getUnstagedNewFiles().filter(
+          (f) => !stagedNewFiles.includes(f),
+        ),
+      ];
 
   return newFiles.map((filePath) => ({
     path: filePath,
@@ -95,6 +105,23 @@ export function getNewFileContents(): { path: string; content: string }[] {
 export function getStagedNewFiles(): string[] {
   const output = execGit(
     ["diff", "--cached", "--name-status", "--diff-filter=A"],
+    { tolerateError: true },
+  );
+  if (!output.trim()) return [];
+  return output
+    .split("\n")
+    .filter((line) => line.startsWith("A\t"))
+    .map((line) => line.slice(2).trim())
+    .filter(Boolean);
+}
+
+/**
+ * 获取工作区中所有新增未暂存文件的路径列表。
+ * 通过 git diff --name-status --diff-filter=A 获取。
+ */
+function getUnstagedNewFiles(): string[] {
+  const output = execGit(
+    ["diff", "--name-status", "--diff-filter=A"],
     { tolerateError: true },
   );
   if (!output.trim()) return [];
