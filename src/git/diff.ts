@@ -75,9 +75,19 @@ export function getAllDiff(): string {
   return parts.join("\n\n");
 }
 
-export function hasStagedChanges(): boolean {
-  const result = execGit(["diff", "--cached", "--name-only"], {
-    tolerateError: true,
-  });
-  return result.trim().length > 0;
+/**
+ * 获取暂存区中所有新增文件的路径列表。
+ * 通过 git diff --cached --name-status --diff-filter=A 获取。
+ */
+export function getStagedNewFiles(): string[] {
+  const output = execGit(
+    ["diff", "--cached", "--name-status", "--diff-filter=A"],
+    { tolerateError: true },
+  );
+  if (!output.trim()) return [];
+  return output
+    .split("\n")
+    .filter((line) => line.startsWith("A\t"))
+    .map((line) => line.slice(2).trim())
+    .filter(Boolean);
 }

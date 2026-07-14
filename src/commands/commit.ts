@@ -2,9 +2,8 @@ import { loadConfig } from "../config/loader";
 import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
-import { getAllDiff, hasStagedChanges } from "../git/diff";
-import { isGitRepo } from "../git/runner";
-import { generateCommitMessageBatched } from "../llm/batch";
+import { getAllDiff, getStagedNewFiles, hasStagedChanges } from "../git/diff";
+import { execGit, isGitRepo } from "../git/runner";
 
 export interface CommitOptions {
   stagedOnly?: boolean;
@@ -35,9 +34,59 @@ function stageOrProceed(stagedOnly: boolean): void {
 }
 
 function getChanges(): string | null {
-  const diff = getAllDiff();
-  if (!diff.trim()) return null;
-  return diff;
+  const output = getAllDiff();
+  return output.trim() || null;
+}
+
+async function confirmSuspiciousNewFiles(): Promise<void> {
+  const newFiles = getStagedNewFiles();
+  const suspiciousFiles = newFiles.filter((filePath) => {
+    const SUSPICIOUS_PATTERNS: RegExp[] = [
+      /^node_modules[\\/]/,
+      /^dist[\\/]/,
+      /^build[\\/]/,
+      /^out[\\/]/,
+      /^target[\\/]/,
+      /^\.env/,
+      /\.env\./,
+      /\.log$/,
+      /\.tmp$/,
+      /\.swp$/,
+      /\.DS_Store$/,
+      /Thumbs\.db$/,
+      /^\.next[\\/]/,
+      /^\.nuxt[\\/]/,
+      /^coverage[\\/]/,
+      /^\.git/,
+      /node_modules/,
+      /package-lock\.json$/,
+      /yarn\.lock$/,
+      /pnpm-lock\.yaml$/,
+    ];
+    return SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(filePath));
+  });
+  if (suspiciousFiles.length === 0) return;
+  console.log("发现疑似不需要提交的新增文件：");
+  for (const file of suspiciousFiles) {
+    console.log(`  - ${file}`);
+  }
+  const { createInterface } = require("readline/promises");
+  const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl
+    .question("是否排除这些文件并继续提交？(y/N): ")
+    .finally(() => rl.close());
+  if (answer.toLowerCase() === "y" || answer.toLowerCase() === "yes") {
+    execGit(["reset", "--", ...suspiciousFiles]);
+    if (!hasStagedChanges()) {
+      throw new CliError("排除所有可疑文件后没有可提交的变更。");
+    }
+    console.log(`已排除 ${suspiciousFiles.length} 个文件，继续提交...`);
+  } else {
+    throw new CliError("用户取消提交。");
+  }
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
@@ -48,6 +97,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     );
   }
   stageOrProceed(!!options.stagedOnly);
+  await confirmSuspiciousNewFiles();
   const diff = getChanges();
   if (!diff) {
     console.log("没有可提交的变更。");
