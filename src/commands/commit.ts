@@ -1,15 +1,15 @@
 import { loadConfig } from "../config/loader";
 import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
-import { gitAddAll, gitCommit } from "../git/commit";
 import {
   getNewFileContents,
   getStagedNewFiles,
   hasStagedChanges,
 } from "../git/diff";
-import { execGit, isGitRepo } from "../git/runner";
-import { reviewNewFiles } from "../llm/reviewer";
+import { execGit, gitAddAll, gitCommit, isGitRepo } from "../git/runner";
 import { generateCommitMessageBatched } from "../llm/batch";
+import { reviewNewFiles } from "../llm/reviewer";
+import { question } from "../utils/cli";
 
 export interface CommitOptions {
   stagedOnly?: boolean;
@@ -39,8 +39,11 @@ function getChanges(): string | null {
   const output = execGit(["diff", "--cached"], { tolerateError: true });
   return output.trim() || null;
 }
-async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
-  const newFiles = getNewFileContents();
+async function confirmSuspiciousNewFiles(
+  config: AppConfig,
+  stagedOnly: boolean,
+): Promise<void> {
+  const newFiles = getNewFileContents(stagedOnly);
   if (newFiles.length === 0) return;
   const result = await reviewNewFiles(newFiles, config);
   if (!result.shouldCommit) {
@@ -49,14 +52,7 @@ async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
       console.log(`  - ${file}`);
     }
     console.log(`原因：${result.reason}`);
-    const { createInterface } = require("readline/promises");
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const answer = await rl
-      .question("是否排除这些文件并继续提交？(y/N): ")
-      .finally(() => rl.close());
+    const answer = await question("是否排除这些文件并继续提交？(y/N): ");
     if (answer.toLowerCase() === "y" || answer.toLowerCase() === "yes") {
       const stagedNewFiles = getStagedNewFiles();
       const stagedToRemove = result.suspiciousFiles.filter((f) =>
@@ -68,7 +64,9 @@ async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
       if (!hasStagedChanges()) {
         throw new CliError("排除所有可疑文件后没有可提交的变更。");
       }
-      console.log(`已排除 ${result.suspiciousFiles.length} 个文件，继续提交...`);
+      console.log(
+        `已排除 ${result.suspiciousFiles.length} 个文件，继续提交...`,
+      );
     } else {
       throw new CliError("用户取消提交。");
     }
@@ -83,7 +81,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     );
   }
   stageOrProceed(!!options.stagedOnly);
-  await confirmSuspiciousNewFiles(config);
+  await confirmSuspiciousNewFiles(config, !!options.stagedOnly);
   const diff = getChanges();
   if (!diff) {
     console.log("没有可提交的变更。");
