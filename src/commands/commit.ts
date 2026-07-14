@@ -72,9 +72,6 @@ async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
     }
   }
 }
-    throw new CliError("用户取消提交。");
-  }
-}
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const config = ensureConfig();
@@ -84,7 +81,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     );
   }
   stageOrProceed(!!options.stagedOnly);
-  await confirmSuspiciousNewFiles();
+  await confirmSuspiciousNewFiles(config);
   const diff = getChanges();
   if (!diff) {
     console.log("没有可提交的变更。");
