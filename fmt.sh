@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -e pipefail
 
 # Check pnpm
 if ! command -v pnpm >/dev/null 2>&1; then

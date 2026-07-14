@@ -1,40 +1,21 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "../config/types";
-import { validateCommitMessage } from "./checker";
 import {
-  MAX_RETRIES,
-  SYSTEM_PROMPT,
   createClient,
   generateCommitMessage,
+  retryWithValidation,
 } from "./client";
+import {
+  MERGE_SYSTEM_PROMPT,
+  PARTIAL_SYSTEM_PROMPT,
+  SYSTEM_PROMPT,
+} from "./prompts";
 import { extractContent } from "./response";
 import { groupIntoBatches, parseDiffBlocks } from "./split";
 import { estimateTokens } from "./tokens";
 
 const FRAMING_OVERHEAD = 200;
-
-const PARTIAL_SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。你将收到一个大型 Git diff 的**一部分**（包含部分文件的变更）。
-
-请仅根据这部分 diff 生成一个**局部的**提交信息草稿，格式规范同 Conventional Commits，但允许 scope 或 type 不够精确——后续会合并所有部分的结果。
-
-格式规范：
-- 遵循 Conventional Commits：<type>(<scope>): <description>
-- type 可选值：feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-- 标题行控制在 72 字符以内
-- 正文使用无序列表分条陈述，每条以 "- " 开头
-- 描述语言使用中文，避免使用英文
-- 只回复提交信息本身，不要添加任何解释`;
-
-const MERGE_SYSTEM_PROMPT = `你是一位擅长编写 Git 提交信息的专家。你将收到多个**局部的**提交信息草稿，每个草稿描述了部分文件的变更。
-
-请将它们合并为一个**完整的、连贯的**提交信息，遵循 Conventional Commits 格式：
-- 选择最能概括所有变更的 type 和 scope
-- 标题行控制在 72 字符以内
-- 正文合并所有草稿的要点，去重，保持逻辑分组，使用无序列表
-- 如变更较简单，可省略正文
-- 描述语言使用中文，避免使用英文
-- 只回复最终的提交信息本身，不要添加任何解释`;
 
 export interface BatchResult {
   message: string;
@@ -117,60 +98,6 @@ async function mergePartialMessages(
   return content;
 }
 
-async function validateWithRetry(
-  initialMessage: string,
-  partialMessages: string[],
-  config: AppConfig,
-): Promise<string> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: MERGE_SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: partialMessages
-        .map((msg, i) => `--- 部分 ${i + 1} ---\n${msg}`)
-        .join("\n\n"),
-    },
-    { role: "assistant", content: initialMessage },
-  ];
-
-  let lastMessage = initialMessage;
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const validation = await validateCommitMessage(lastMessage);
-    if (validation.valid) return lastMessage;
-
-    if (attempt < MAX_RETRIES) {
-      console.log(
-        `  合并信息格式校验未通过（第 ${attempt} 次）: ${validation.reason}`,
-      );
-      console.log("  正在重新合并...\n");
-      messages.push({
-        role: "user",
-        content: `生成的提交信息格式不符合规范：${validation.reason}。请严格按照 Conventional Commits 格式重新生成。`,
-      });
-
-      const client = createClient(config);
-      const response = await client.chat.completions.create({
-        model: config.llm.model,
-        temperature: config.llm.temperature,
-        max_tokens: config.llm.maxOutputTokens,
-        messages,
-      });
-      lastMessage = extractContent(response);
-      if (!lastMessage) {
-        throw new Error("LLM 在重试合并时返回了空内容。");
-      }
-      messages.push({ role: "assistant", content: lastMessage });
-    } else {
-      throw new Error(
-        `合并信息格式校验失败（已重试 ${MAX_RETRIES} 次）: ${validation.reason}\n最后一次生成的提交信息：\n${lastMessage}`,
-      );
-    }
-  }
-
-  throw new Error("意外的错误：重试循环结束后仍未能生成有效提交信息");
-}
-
 export async function generateCommitMessageBatched(
   diff: string,
   config: AppConfig,
@@ -200,6 +127,18 @@ export async function generateCommitMessageBatched(
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
   const merged = await mergePartialMessages(partialMessages, config);
 
-  const message = await validateWithRetry(merged, partialMessages, config);
+  const messages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: "system", content: MERGE_SYSTEM_PROMPT },
+    {
+      role: "user",
+      content: partialMessages
+        .map((msg, i) => `--- 部分 ${i + 1} ---\n${msg}`)
+        .join("\n\n"),
+    },
+  ];
+  const message = await retryWithValidation(config, messages, {
+    initialMessage: merged,
+    label: "合并信息",
+  });
   return { message, batchCount: batches.length };
 }
