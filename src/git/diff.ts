@@ -76,6 +76,19 @@ export function getAllDiff(): string {
 }
 
 /**
+ * 获取新增文件的路径及其内容，用于大模型审查。
+ * 返回 path 和 content 的数组。
+ */
+export function getNewFileContents(): { path: string; content: string }[] {
+  const newFiles = getStagedNewFiles();
+
+  return newFiles.map((filePath) => ({
+    path: filePath,
+    content: execGit(["show", `:${filePath}`], { tolerateError: true }),
+  }));
+}
+
+/**
  * 获取暂存区中所有新增文件的路径列表。
  * 通过 git diff --cached --name-status --diff-filter=A 获取。
  */
