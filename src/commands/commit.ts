@@ -3,13 +3,13 @@ import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
 import { gitAddAll, gitCommit } from "../git/commit";
 import {
-  getAllDiff,
   getNewFileContents,
   getStagedNewFiles,
   hasStagedChanges,
 } from "../git/diff";
 import { execGit, isGitRepo } from "../git/runner";
 import { reviewNewFiles } from "../llm/reviewer";
+import { generateCommitMessageBatched } from "../llm/batch";
 
 export interface CommitOptions {
   stagedOnly?: boolean;
@@ -36,7 +36,7 @@ function stageOrProceed(stagedOnly: boolean): void {
 }
 
 function getChanges(): string | null {
-  const output = getAllDiff();
+  const output = execGit(["diff", "--cached"], { tolerateError: true });
   return output.trim() || null;
 }
 async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
@@ -58,7 +58,13 @@ async function confirmSuspiciousNewFiles(config: AppConfig): Promise<void> {
       .question("是否排除这些文件并继续提交？(y/N): ")
       .finally(() => rl.close());
     if (answer.toLowerCase() === "y" || answer.toLowerCase() === "yes") {
-      execGit(["reset", "--", ...result.suspiciousFiles]);
+      const stagedNewFiles = getStagedNewFiles();
+      const stagedToRemove = result.suspiciousFiles.filter((f) =>
+        stagedNewFiles.includes(f),
+      );
+      if (stagedToRemove.length > 0) {
+        execGit(["reset", "--", ...stagedToRemove]);
+      }
       if (!hasStagedChanges()) {
         throw new CliError("排除所有可疑文件后没有可提交的变更。");
       }

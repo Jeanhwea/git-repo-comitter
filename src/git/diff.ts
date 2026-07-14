@@ -131,3 +131,10 @@ function getUnstagedNewFiles(): string[] {
     .map((line) => line.slice(2).trim())
     .filter(Boolean);
 }
+
+export function hasStagedChanges(): boolean {
+  const output = execGit(["diff", "--cached", "--name-only"], {
+    tolerateError: true,
+  });
+  return output.trim().length > 0;
+}
