@@ -24,7 +24,14 @@ export function getNewFileContents(
  */
 export function getStagedNewFiles(): string[] {
   const output = execGit(
-    ["diff", "--cached", "--name-status", "--diff-filter=A"],
+    [
+      "-c",
+      "core.quotepath=false",
+      "diff",
+      "--cached",
+      "--name-status",
+      "--diff-filter=A",
+    ],
     { tolerateError: true },
   );
   if (!output.trim()) return [];
@@ -40,9 +47,12 @@ export function getStagedNewFiles(): string[] {
  * 通过 git diff --name-status --diff-filter=A 获取。
  */
 function getUnstagedNewFiles(): string[] {
-  const output = execGit(["diff", "--name-status", "--diff-filter=A"], {
-    tolerateError: true,
-  });
+  const output = execGit(
+    ["-c", "core.quotepath=false", "diff", "--name-status", "--diff-filter=A"],
+    {
+      tolerateError: true,
+    },
+  );
   if (!output.trim()) return [];
   return output
     .split("\n")
@@ -56,4 +66,9 @@ export function hasStagedChanges(): boolean {
     tolerateError: true,
   });
   return output.trim().length > 0;
+}
+
+/** 获取暂存区的完整 diff 内容，无变更时返回空串。 */
+export function getStagedDiff(): string {
+  return execGit(["diff", "--cached"], { tolerateError: true });
 }
