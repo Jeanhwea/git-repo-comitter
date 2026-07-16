@@ -32,3 +32,8 @@ export function gitAddAll(): void {
 export function gitCommit(message: string): void {
   execGit(["commit", "-m", message]);
 }
+
+export function gitReset(files: string[]): void {
+  if (files.length === 0) return;
+  execGit(["reset", "--", ...files]);
+}

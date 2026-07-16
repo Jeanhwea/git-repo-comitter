@@ -17,6 +17,39 @@ export function createClient(config: AppConfig): OpenAI {
   });
 }
 
+/** 低层：构造参数、调用 create、返回提取后内容（可能为空串）。 */
+export async function chatCompletion(
+  config: AppConfig,
+  messages: OpenAI.ChatCompletionMessageParam[],
+  temperatureOverride?: number,
+): Promise<string> {
+  const client = createClient(config);
+  const response = await client.chat.completions.create({
+    model: config.llm.model,
+    temperature: temperatureOverride ?? config.llm.temperature,
+    max_tokens: config.llm.maxOutputTokens,
+    messages,
+  });
+  return extractContent(response);
+}
+
+/** 高层：单轮 system+user 便捷封装。 */
+export async function singleTurn(
+  config: AppConfig,
+  systemPrompt: string,
+  userContent: string,
+  temperatureOverride?: number,
+): Promise<string> {
+  return chatCompletion(
+    config,
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ],
+    temperatureOverride,
+  );
+}
+
 export async function retryWithValidation(
   config: AppConfig,
   messages: OpenAI.ChatCompletionMessageParam[],
@@ -27,14 +60,7 @@ export async function retryWithValidation(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     if (lastMessage === null) {
-      const client = createClient(config);
-      const response = await client.chat.completions.create({
-        model: config.llm.model,
-        temperature: config.llm.temperature,
-        max_tokens: config.llm.maxOutputTokens,
-        messages,
-      });
-      lastMessage = extractContent(response);
+      lastMessage = await chatCompletion(config, messages);
       if (!lastMessage) {
         throw new Error(`LLM 在生成${label}时返回了空内容。`);
       }

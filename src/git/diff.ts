@@ -57,3 +57,8 @@ export function hasStagedChanges(): boolean {
   });
   return output.trim().length > 0;
 }
+
+/** 获取暂存区的完整 diff 内容，无变更时返回空串。 */
+export function getStagedDiff(): string {
+  return execGit(["diff", "--cached"], { tolerateError: true });
+}
