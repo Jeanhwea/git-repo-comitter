@@ -16,6 +16,7 @@ import { groupIntoBatches, parseDiffBlocks } from "./split";
 import { estimateTokens } from "./tokens";
 
 const FRAMING_OVERHEAD = 200;
+const SAFETY_MARGIN_RATIO = 0.05;
 
 export interface BatchResult {
   message: string;
@@ -23,12 +24,12 @@ export interface BatchResult {
 }
 
 function effectiveLimit(config: AppConfig, systemPrompt: string): number {
-  return (
+  const raw =
     config.llm.maxInputTokens -
     estimateTokens(systemPrompt) -
     FRAMING_OVERHEAD -
-    config.llm.maxOutputTokens
-  );
+    config.llm.maxOutputTokens;
+  return Math.floor(raw * (1 - SAFETY_MARGIN_RATIO));
 }
 
 async function generatePartialMessage(
