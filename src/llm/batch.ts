@@ -44,7 +44,6 @@ async function generatePartialMessage(
   return content;
 }
 
-/** 构造合并阶段的 messages，统一应用 token 省略逻辑，供初始合并与重试校验共享。 */
 function buildMergeMessages(
   partialMessages: string[],
   config: AppConfig,

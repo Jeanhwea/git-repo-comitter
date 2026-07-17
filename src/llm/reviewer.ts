@@ -8,9 +8,6 @@ export interface ReviewResult {
   reason: string;
 }
 
-/**
- * 使用大模型审查新增文件是否应该提交
- */
 export async function reviewNewFiles(
   newFileContents: { path: string; content: string }[],
   config: AppConfig,

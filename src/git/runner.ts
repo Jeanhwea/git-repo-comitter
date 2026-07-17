@@ -1,7 +1,6 @@
 import { execFileSync } from "child_process";
 
 export interface GitExecOptions {
-  /** 返回空串而非抛错，适用于探测性命令。 */
   tolerateError?: boolean;
 }
 

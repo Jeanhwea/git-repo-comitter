@@ -1,6 +1,5 @@
 import { execGit } from "./runner";
 
-/** 获取新增文件的路径及其内容，用于大模型审查。 */
 export function getNewFileContents(
   onlyStaged: boolean = false,
 ): { path: string; content: string }[] {
@@ -18,10 +17,6 @@ export function getNewFileContents(
   }));
 }
 
-/**
- * 获取暂存区中所有新增文件的路径列表。
- * 通过 git diff --cached --name-status --diff-filter=A 获取。
- */
 export function getStagedNewFiles(): string[] {
   const output = execGit(
     [
@@ -42,10 +37,6 @@ export function getStagedNewFiles(): string[] {
     .filter(Boolean);
 }
 
-/**
- * 获取工作区中所有新增未暂存文件的路径列表。
- * 通过 git diff --name-status --diff-filter=A 获取。
- */
 function getUnstagedNewFiles(): string[] {
   const output = execGit(
     ["-c", "core.quotepath=false", "diff", "--name-status", "--diff-filter=A"],
@@ -68,7 +59,6 @@ export function hasStagedChanges(): boolean {
   return output.trim().length > 0;
 }
 
-/** 获取暂存区的完整 diff 内容，无变更时返回空串。 */
 export function getStagedDiff(): string {
   return execGit(["diff", "--cached"], { tolerateError: true });
 }

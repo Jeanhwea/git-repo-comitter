@@ -17,7 +17,6 @@ export function createClient(config: AppConfig): OpenAI {
   });
 }
 
-/** 低层：构造参数、调用 create、返回提取后内容（可能为空串）。 */
 export async function chatCompletion(
   config: AppConfig,
   messages: OpenAI.ChatCompletionMessageParam[],
@@ -33,7 +32,6 @@ export async function chatCompletion(
   return extractContent(response);
 }
 
-/** 高层：单轮 system+user 便捷封装。 */
 export async function singleTurn(
   config: AppConfig,
   systemPrompt: string,

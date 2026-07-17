@@ -1,10 +1,8 @@
-// ── types ──────────────────────────────────────────────────────────────
 interface ValidationResult {
   valid: boolean;
   reason?: string;
 }
 
-// ── rules ──────────────────────────────────────────────────────────────
 const ALLOWED_TYPES = [
   "feat",
   "fix",
@@ -26,7 +24,6 @@ export function validateCommitMessage(message: string): ValidationResult {
     firstBlank === -1 ? message.trim() : message.slice(0, firstBlank).trim();
   const body = firstBlank === -1 ? "" : message.slice(firstBlank + 2).trim();
 
-  // Header must match conventional commit: type(scope)!: description
   const headerPattern =
     /^(?<type>[a-zA-Z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:\s*(?<description>.+)$/;
 
@@ -41,7 +38,6 @@ export function validateCommitMessage(message: string): ValidationResult {
 
   const { type } = match.groups!;
 
-  // type must be one of the allowed types
   if (!ALLOWED_TYPES.includes(type as AllowedType)) {
     return {
       valid: false,
@@ -49,7 +45,6 @@ export function validateCommitMessage(message: string): ValidationResult {
     };
   }
 
-  // header length check
   if (header.length > 72) {
     return {
       valid: false,
@@ -57,16 +52,13 @@ export function validateCommitMessage(message: string): ValidationResult {
     };
   }
 
-  // body checks
   if (body) {
-    // body must be preceded by a blank line
     if (firstBlank === -1) {
       return {
         valid: false,
         reason: "正文前需空一行",
       };
     }
-    // each body line must be ≤ 72 chars
     const lines = body.split("\n");
     const longLines = lines.filter((line) => line.length > 72);
     if (longLines.length > 0) {

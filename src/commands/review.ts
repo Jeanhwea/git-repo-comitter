@@ -9,9 +9,6 @@ import { gitReset } from "../git/runner";
 import { reviewNewFiles } from "../llm/reviewer";
 import { question } from "../utils/cli";
 
-/**
- * 提交前审查门：检查新增文件是否可疑，若可疑则询问用户是否排除后继续。
- */
 export async function runReviewGate(
   config: AppConfig,
   stagedOnly: boolean,
