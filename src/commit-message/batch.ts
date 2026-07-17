@@ -4,11 +4,8 @@ import type { AppConfig } from "../config/types";
 import { callWithValidation } from "../llm/retry";
 import { estimateTokens } from "../llm/tokens";
 import { chatCompletion, singleTurn } from "../llm/transport/client";
-import {
-  commitMessageRepairHint,
-  commitMessageValidator,
-  generateCommitMessage,
-} from "./generator";
+import { commitMessageRepairHint, validateCommitMessage } from "./checker";
+import { generateCommitMessage } from "./generator";
 import {
   MERGE_SYSTEM_PROMPT,
   PARTIAL_SYSTEM_PROMPT,
@@ -57,13 +54,12 @@ function buildMergeMessages(
   for (let i = 0; i < partialMessages.length; i++) {
     const part = `--- 部分 ${i + 1} ---\n${partialMessages[i]}`;
     const partTokens = estimateTokens(part);
-    if (totalTokens + partTokens <= limit) {
-      parts.push(part);
-      totalTokens += partTokens;
-    } else {
+    if (totalTokens + partTokens > limit) {
       omitted = partialMessages.length - i;
       break;
     }
+    parts.push(part);
+    totalTokens += partTokens;
   }
 
   const userContent =
@@ -111,7 +107,7 @@ export async function generateCommitMessageBatched(
   const message = await callWithValidation(config, messages, {
     initialMessage: initial,
     label: "合并信息",
-    validate: commitMessageValidator,
+    validate: validateCommitMessage,
     repairHint: commitMessageRepairHint,
   });
   return { message, batchCount: batches.length };

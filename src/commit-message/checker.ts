@@ -1,7 +1,7 @@
-interface ValidationResult {
-  valid: boolean;
-  reason?: string;
-}
+import type { ValidationOutcome } from "../llm/retry";
+
+export const commitMessageRepairHint = (reason: string): string =>
+  `生成的提交信息格式不符合规范：${reason}。请严格按照 Conventional Commits 格式重新生成。`;
 
 const ALLOWED_TYPES = [
   "feat",
@@ -18,7 +18,9 @@ const ALLOWED_TYPES = [
 ] as const;
 type AllowedType = (typeof ALLOWED_TYPES)[number];
 
-export function validateCommitMessage(message: string): ValidationResult {
+export function validateCommitMessage(
+  message: string,
+): ValidationOutcome<string> {
   const firstBlank = message.indexOf("\n\n");
   const header =
     firstBlank === -1 ? message.trim() : message.slice(0, firstBlank).trim();
@@ -69,5 +71,5 @@ export function validateCommitMessage(message: string): ValidationResult {
     }
   }
 
-  return { valid: true };
+  return { valid: true, value: message };
 }
