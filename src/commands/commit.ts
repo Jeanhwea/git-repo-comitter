@@ -30,10 +30,6 @@ function stageOrProceed(stagedOnly: boolean): void {
   gitAddAll();
 }
 
-function getChanges(): string | null {
-  return getStagedDiff().trim() || null;
-}
-
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const config = ensureConfig();
   if (!isGitRepo()) {
@@ -43,7 +39,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
   }
   stageOrProceed(!!options.stagedOnly);
   await runReviewGate(config, !!options.stagedOnly);
-  const diff = getChanges();
+  const diff = getStagedDiff().trim() || null;
   if (!diff) {
     console.log("没有可提交的变更。");
     return;

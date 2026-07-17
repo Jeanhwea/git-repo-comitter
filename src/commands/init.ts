@@ -1,4 +1,8 @@
-import { loadUserConfig, saveUserConfig } from "../config/loader";
+import {
+  DEFAULT_CONFIG,
+  loadUserConfig,
+  saveUserConfig,
+} from "../config/loader";
 import { CliError } from "../errors";
 import { question } from "../utils/cli";
 
@@ -10,20 +14,20 @@ export async function runInit(): Promise<void> {
   const endpoint =
     (
       await question(
-        `大模型链接（API 地址）[${existing.endpoint || "https://api.openai.com/v1"}]: `,
+        `大模型链接（API 地址）[${existing.endpoint || DEFAULT_CONFIG.endpoint}]: `,
       )
     ).trim() ||
     existing.endpoint ||
-    "https://api.openai.com/v1";
+    DEFAULT_CONFIG.endpoint;
 
   const model =
     (
       await question(
-        `模型名称 [${existing.llm?.model || "deepseek-v4-flash"}]: `,
+        `模型名称 [${existing.llm?.model || DEFAULT_CONFIG.llm.model}]: `,
       )
     ).trim() ||
     existing.llm?.model ||
-    "deepseek-v4-flash";
+    DEFAULT_CONFIG.llm.model;
 
   const apiKey =
     (
@@ -39,9 +43,9 @@ export async function runInit(): Promise<void> {
     endpoint,
     llm: {
       model,
-      temperature: 0.7,
-      maxInputTokens: 262144,
-      maxOutputTokens: 16384,
+      temperature: DEFAULT_CONFIG.llm.temperature,
+      maxInputTokens: DEFAULT_CONFIG.llm.maxInputTokens,
+      maxOutputTokens: DEFAULT_CONFIG.llm.maxOutputTokens,
     },
   });
   console.log("\n配置已保存到 ~/.grc/config.json");

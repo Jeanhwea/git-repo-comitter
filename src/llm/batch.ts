@@ -1,12 +1,12 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "../config/types";
+import { chatCompletion, singleTurn } from "./client";
 import {
-  chatCompletion,
+  commitMessageRepairHint,
+  commitMessageValidator,
   generateCommitMessage,
-  retryWithValidation,
-  singleTurn,
-} from "./client";
+} from "./commit-message";
 import {
   MERGE_SYSTEM_PROMPT,
   PARTIAL_SYSTEM_PROMPT,
@@ -14,6 +14,7 @@ import {
 } from "./prompts";
 import { groupIntoBatches, parseDiffBlocks } from "./split";
 import { estimateTokens } from "./tokens";
+import { callWithValidation } from "./validated-call";
 
 const FRAMING_OVERHEAD = 200;
 const SAFETY_MARGIN_RATIO = 0.05;
@@ -75,18 +76,6 @@ function buildMergeMessages(
   ];
 }
 
-async function mergePartialMessages(
-  partialMessages: string[],
-  config: AppConfig,
-): Promise<string> {
-  const messages = buildMergeMessages(partialMessages, config);
-  const content = await chatCompletion(config, messages);
-  if (!content) {
-    throw new Error("LLM 在合并提交信息时返回了空内容。");
-  }
-  return content;
-}
-
 export async function generateCommitMessageBatched(
   diff: string,
   config: AppConfig,
@@ -114,12 +103,16 @@ export async function generateCommitMessageBatched(
   }
 
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
-  const merged = await mergePartialMessages(partialMessages, config);
-
   const messages = buildMergeMessages(partialMessages, config);
-  const message = await retryWithValidation(config, messages, {
-    initialMessage: merged,
+  const initial = await chatCompletion(config, messages);
+  if (!initial) {
+    throw new Error("LLM 在合并提交信息时返回了空内容。");
+  }
+  const message = await callWithValidation(config, messages, {
+    initialMessage: initial,
     label: "合并信息",
+    validate: commitMessageValidator,
+    repairHint: commitMessageRepairHint,
   });
   return { message, batchCount: batches.length };
 }

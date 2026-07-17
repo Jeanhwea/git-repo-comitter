@@ -1,11 +1,25 @@
+import type OpenAI from "openai";
+
 import type { AppConfig } from "../config/types";
-import { singleTurn } from "./client";
 import { REVIEW_SYSTEM_PROMPT } from "./prompts";
+import { type ValidationOutcome, callWithValidation } from "./validated-call";
 
 export interface ReviewResult {
   shouldCommit: boolean;
   suspiciousFiles: string[];
   reason: string;
+}
+
+function reviewValidator(content: string): ValidationOutcome<ReviewResult> {
+  try {
+    const result = JSON.parse(content);
+    return { valid: true, value: result as ReviewResult };
+  } catch (err) {
+    return {
+      valid: false,
+      reason: `JSON 解析失败: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 }
 
 export async function reviewNewFiles(
@@ -16,20 +30,14 @@ export async function reviewNewFiles(
     .map((f) => `路径: ${f.path}\n内容:\n${f.content}`)
     .join("\n\n---\n\n");
 
-  const content = await singleTurn(
-    config,
-    REVIEW_SYSTEM_PROMPT,
-    `请审查以下新增文件：\n\n${fileList}`,
-    0,
-  );
-  if (!content) {
-    throw new Error("LLM 在审查新增文件时返回了空内容。");
-  }
+  const messages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: "system", content: REVIEW_SYSTEM_PROMPT },
+    { role: "user", content: `请审查以下新增文件：\n\n${fileList}` },
+  ];
 
-  try {
-    const result = JSON.parse(content) as ReviewResult;
-    return result;
-  } catch {
-    throw new Error(`LLM 返回的审查结果不是有效的 JSON:\n${content}`);
-  }
+  return callWithValidation<ReviewResult>(config, messages, {
+    label: "审查结果",
+    temperatureOverride: 0,
+    validate: reviewValidator,
+  });
 }

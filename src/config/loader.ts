@@ -6,7 +6,7 @@ import { type AppConfig } from "./types";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 
-const DEFAULT_CONFIG: AppConfig = {
+export const DEFAULT_CONFIG: AppConfig = {
   llm: {
     model: "deepseek-v4-flash",
     temperature: 0.7,
