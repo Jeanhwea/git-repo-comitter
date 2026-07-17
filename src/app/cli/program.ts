@@ -2,8 +2,9 @@ import { Command } from "commander";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-import { runCommit } from "../commands/commit";
-import { runInit } from "../commands/init";
+import { runCommit } from "@/app/commands/commit";
+import { runInit } from "@/app/commands/init";
+
 import { CliError } from "./errors";
 
 export function getVersion(): string {

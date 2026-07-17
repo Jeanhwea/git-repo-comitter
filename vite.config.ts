@@ -3,6 +3,11 @@ import { resolve } from "path";
 
 export default defineConfig({
   envDir: false,
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src"),
+    },
+  },
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.ts"),

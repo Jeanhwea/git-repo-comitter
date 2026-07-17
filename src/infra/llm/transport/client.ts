@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
-import type { AppConfig } from "../../config/types";
+import type { AppConfig } from "@/infra/config/types";
+
 import { extractContent } from "./response";
 
 export function createClient(config: AppConfig): OpenAI {

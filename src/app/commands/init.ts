@@ -1,10 +1,10 @@
-import { CliError } from "../../app/cli/errors";
-import { question } from "../../app/cli/input";
+import { CliError } from "@/app/cli/errors";
+import { question } from "@/app/cli/input";
 import {
   DEFAULT_CONFIG,
   loadUserConfig,
   saveUserConfig,
-} from "../../infra/config/loader";
+} from "@/infra/config/loader";
 
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");

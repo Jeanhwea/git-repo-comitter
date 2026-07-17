@@ -1,4 +1,4 @@
-import { estimateTokens } from "../../infra/llm/tokens";
+import { estimateTokens } from "@/infra/llm/tokens";
 
 export interface DiffBlock {
   filePath: string;

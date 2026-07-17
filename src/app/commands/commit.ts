@@ -1,10 +1,10 @@
-import { CliError } from "../../app/cli/errors";
-import { generateCommitMessageBatched } from "../../domain/commit-message/batch";
-import { runReviewGate } from "../../domain/file-review/gate";
-import { loadConfig } from "../../infra/config/loader";
-import type { AppConfig } from "../../infra/config/types";
-import { getStagedDiff, hasStagedChanges } from "../../infra/git/diff";
-import { gitAddAll, gitCommit, isGitRepo } from "../../infra/git/runner";
+import { CliError } from "@/app/cli/errors";
+import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
+import { runReviewGate } from "@/domain/file-review/gate";
+import { loadConfig } from "@/infra/config/loader";
+import type { AppConfig } from "@/infra/config/types";
+import { getStagedDiff, hasStagedChanges } from "@/infra/git/diff";
+import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/runner";
 
 export interface CommitOptions {
   stagedOnly?: boolean;

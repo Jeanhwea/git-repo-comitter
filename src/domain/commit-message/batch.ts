@@ -1,9 +1,10 @@
 import OpenAI from "openai";
 
-import type { AppConfig } from "../../infra/config/types";
-import { callWithValidation } from "../../infra/llm/retry";
-import { estimateTokens } from "../../infra/llm/tokens";
-import { chatCompletion, singleTurn } from "../../infra/llm/transport/client";
+import type { AppConfig } from "@/infra/config/types";
+import { callWithValidation } from "@/infra/llm/retry";
+import { estimateTokens } from "@/infra/llm/tokens";
+import { chatCompletion, singleTurn } from "@/infra/llm/transport/client";
+
 import { commitMessageRepairHint, validateCommitMessage } from "./checker";
 import { generateCommitMessage } from "./generator";
 import {

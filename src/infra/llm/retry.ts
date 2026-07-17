@@ -1,6 +1,7 @@
 import type OpenAI from "openai";
 
-import type { AppConfig } from "../config/types";
+import type { AppConfig } from "@/infra/config/types";
+
 import { chatCompletion } from "./transport/client";
 
 export const MAX_RETRIES = 3;
