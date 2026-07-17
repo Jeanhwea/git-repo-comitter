@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 
-import type { AppConfig } from "../../config/types";
-import { type ValidationOutcome, callWithValidation } from "../retry";
+import type { AppConfig } from "../config/types";
+import { type ValidationOutcome, callWithValidation } from "../llm/retry";
 import { REVIEW_SYSTEM_PROMPT } from "./prompts";
 
 export interface ReviewResult {

@@ -1,14 +1,14 @@
 import OpenAI from "openai";
 
-import type { AppConfig } from "../../config/types";
-import { callWithValidation } from "../retry";
-import { estimateTokens } from "../tokens";
-import { chatCompletion, singleTurn } from "../transport/client";
+import type { AppConfig } from "../config/types";
+import { callWithValidation } from "../llm/retry";
+import { estimateTokens } from "../llm/tokens";
+import { chatCompletion, singleTurn } from "../llm/transport/client";
 import {
   commitMessageRepairHint,
   commitMessageValidator,
   generateCommitMessage,
-} from "./message";
+} from "./generator";
 import {
   MERGE_SYSTEM_PROMPT,
   PARTIAL_SYSTEM_PROMPT,

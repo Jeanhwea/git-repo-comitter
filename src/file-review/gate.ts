@@ -1,13 +1,13 @@
+import { CliError } from "../cli/errors";
+import { question } from "../cli/input";
 import type { AppConfig } from "../config/types";
-import { CliError } from "../errors";
 import {
   getNewFileContents,
   getStagedNewFiles,
   hasStagedChanges,
 } from "../git/diff";
 import { gitReset } from "../git/runner";
-import { reviewNewFiles } from "../llm/review/reviewer";
-import { question } from "../utils/cli";
+import { reviewNewFiles } from "./reviewer";
 
 export async function runReviewGate(
   config: AppConfig,
