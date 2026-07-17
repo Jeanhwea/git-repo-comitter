@@ -1,12 +1,12 @@
-import { CliError } from "../cli/errors";
-import { question } from "../cli/input";
-import type { AppConfig } from "../config/types";
+import { CliError } from "../../app/cli/errors";
+import { question } from "../../app/cli/input";
+import type { AppConfig } from "../../infra/config/types";
 import {
   getNewFileContents,
   getStagedNewFiles,
   hasStagedChanges,
-} from "../git/diff";
-import { gitReset } from "../git/runner";
+} from "../../infra/git/diff";
+import { gitReset } from "../../infra/git/runner";
 import { reviewNewFiles } from "./reviewer";
 
 export async function runReviewGate(

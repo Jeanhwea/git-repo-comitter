@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 
-import type { AppConfig } from "../config/types";
-import { callWithValidation } from "../llm/retry";
+import type { AppConfig } from "../../infra/config/types";
+import { callWithValidation } from "../../infra/llm/retry";
 import { commitMessageRepairHint, validateCommitMessage } from "./checker";
 import { SYSTEM_PROMPT } from "./prompts";
 

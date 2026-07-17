@@ -1,4 +1,4 @@
-import type { ValidationOutcome } from "../llm/retry";
+import type { ValidationOutcome } from "../../infra/llm/retry";
 
 export const commitMessageRepairHint = (reason: string): string =>
   `生成的提交信息格式不符合规范：${reason}。请严格按照 Conventional Commits 格式重新生成。`;
