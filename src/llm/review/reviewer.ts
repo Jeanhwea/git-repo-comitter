@@ -1,8 +1,8 @@
 import type OpenAI from "openai";
 
-import type { AppConfig } from "../config/types";
+import type { AppConfig } from "../../config/types";
+import { type ValidationOutcome, callWithValidation } from "../retry";
 import { REVIEW_SYSTEM_PROMPT } from "./prompts";
-import { type ValidationOutcome, callWithValidation } from "./validated-call";
 
 export interface ReviewResult {
   shouldCommit: boolean;

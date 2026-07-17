@@ -6,7 +6,7 @@ import {
   hasStagedChanges,
 } from "../git/diff";
 import { gitReset } from "../git/runner";
-import { reviewNewFiles } from "../llm/reviewer";
+import { reviewNewFiles } from "../llm/review/reviewer";
 import { question } from "../utils/cli";
 
 export async function runReviewGate(

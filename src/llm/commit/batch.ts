@@ -1,20 +1,20 @@
 import OpenAI from "openai";
 
-import type { AppConfig } from "../config/types";
-import { chatCompletion, singleTurn } from "./client";
+import type { AppConfig } from "../../config/types";
+import { callWithValidation } from "../retry";
+import { estimateTokens } from "../tokens";
+import { chatCompletion, singleTurn } from "../transport/client";
 import {
   commitMessageRepairHint,
   commitMessageValidator,
   generateCommitMessage,
-} from "./commit-message";
+} from "./message";
 import {
   MERGE_SYSTEM_PROMPT,
   PARTIAL_SYSTEM_PROMPT,
   SYSTEM_PROMPT,
 } from "./prompts";
 import { groupIntoBatches, parseDiffBlocks } from "./split";
-import { estimateTokens } from "./tokens";
-import { callWithValidation } from "./validated-call";
 
 const FRAMING_OVERHEAD = 200;
 const SAFETY_MARGIN_RATIO = 0.05;

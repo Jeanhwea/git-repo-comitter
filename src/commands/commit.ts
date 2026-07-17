@@ -3,7 +3,7 @@ import type { AppConfig } from "../config/types";
 import { CliError } from "../errors";
 import { getStagedDiff, hasStagedChanges } from "../git/diff";
 import { gitAddAll, gitCommit, isGitRepo } from "../git/runner";
-import { generateCommitMessageBatched } from "../llm/batch";
+import { generateCommitMessageBatched } from "../llm/commit/batch";
 import { runReviewGate } from "./review";
 
 export interface CommitOptions {
