@@ -47,10 +47,10 @@ export function validateCommitMessage(
     };
   }
 
-  if (header.length > 72) {
+  if (header.length > 78) {
     return {
       valid: false,
-      reason: `标题行超过 72 字符限制 (当前 ${header.length} 字符)`,
+      reason: `标题行超过 78 字符限制 (当前 ${header.length} 字符)`,
     };
   }
 
@@ -62,11 +62,11 @@ export function validateCommitMessage(
       };
     }
     const lines = body.split("\n");
-    const longLines = lines.filter((line) => line.length > 72);
+    const longLines = lines.filter((line) => line.length > 78);
     if (longLines.length > 0) {
       return {
         valid: false,
-        reason: `正文行超出 72 字符限制: ${longLines.join(", ")}`,
+        reason: `正文行超出 78 字符限制: ${longLines.join(", ")}`,
       };
     }
   }
