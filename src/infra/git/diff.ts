@@ -111,6 +111,8 @@ export function getStagedDiff(): string {
 
   let diff = "";
   if (textFiles.length > 0) {
+    // 使用 :/ 前缀使路径相对于仓库根目录解析，
+    // 避免 cwd 在子目录时 numstat 返回的根相对路径被误当作 cwd 相对路径
     diff = execGit(
       [
         "-c",
@@ -118,7 +120,7 @@ export function getStagedDiff(): string {
         "diff",
         "--cached",
         "--",
-        ...textFiles.map((s) => s.path),
+        ...textFiles.map((s) => `:/${s.path}`),
       ],
       { tolerateError: true },
     );
