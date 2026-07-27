@@ -4,11 +4,14 @@ export interface GitExecOptions {
   tolerateError?: boolean;
 }
 
+const GIT_MAX_BUFFER = 1024 * 1024 * 1024;
+
 export function execGit(args: string[], options: GitExecOptions = {}): string {
   try {
     return execFileSync("git", args, {
       cwd: process.cwd(),
       encoding: "utf-8",
+      maxBuffer: GIT_MAX_BUFFER,
     });
   } catch (err) {
     if (options.tolerateError) return "";
