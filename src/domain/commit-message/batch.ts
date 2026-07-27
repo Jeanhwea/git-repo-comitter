@@ -12,7 +12,11 @@ import {
   PARTIAL_SYSTEM_PROMPT,
   SYSTEM_PROMPT,
 } from "./prompts";
-import { groupIntoBatches, parseDiffBlocks } from "./split";
+import {
+  collapseLargeBlocks,
+  groupIntoBatches,
+  parseDiffBlocks,
+} from "./split";
 
 const FRAMING_OVERHEAD = 200;
 const SAFETY_MARGIN_RATIO = 0.05;
@@ -85,7 +89,13 @@ export async function generateCommitMessageBatched(
     return { message, batchCount: 1 };
   }
 
-  const blocks = parseDiffBlocks(diff);
+  const blocks = collapseLargeBlocks(parseDiffBlocks(diff), limit);
+  const collapsedDiff = blocks.map((b) => b.content).join("\n");
+  if (estimateTokens(collapsedDiff) <= limit) {
+    const message = await generateCommitMessage(collapsedDiff, config);
+    return { message, batchCount: 1 };
+  }
+
   const batches = groupIntoBatches(blocks, limit);
 
   console.log(

@@ -57,6 +57,21 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
   return blocks;
 }
 
+export function collapseLargeBlocks(
+  blocks: DiffBlock[],
+  maxTokens: number,
+): DiffBlock[] {
+  return blocks.map((block) => {
+    if (block.estimatedTokens <= maxTokens) return block;
+    const content = `文件 ${block.filePath} 的变更内容过大，已省略具体差异，仅记录文件名变更。`;
+    return {
+      filePath: block.filePath,
+      content,
+      estimatedTokens: estimateTokens(content),
+    };
+  });
+}
+
 export function groupIntoBatches(
   blocks: DiffBlock[],
   maxTokens: number,
