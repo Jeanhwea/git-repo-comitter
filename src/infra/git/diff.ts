@@ -111,19 +111,19 @@ export function getStagedDiff(): string {
 
   let diff = "";
   if (textFiles.length > 0) {
-    // 使用 :/ 前缀使路径相对于仓库根目录解析，
-    // 避免 cwd 在子目录时 numstat 返回的根相对路径被误当作 cwd 相对路径
-    diff = execGit(
-      [
-        "-c",
-        "core.quotepath=false",
-        "diff",
-        "--cached",
-        "--",
-        ...textFiles.map((s) => `:/${s.path}`),
-      ],
-      { tolerateError: true },
-    );
+    const args = ["-c", "core.quotepath=false", "diff", "--cached"];
+    if (binaryFiles.length > 0) {
+      args.push("--", ":(top)");
+      for (const file of binaryFiles) {
+        args.push(`:(exclude,top)${file.path}`);
+      }
+    }
+    diff = execGit(args, { tolerateError: true });
+    if (!diff.trim() && binaryFiles.length > 0) {
+      diff = execGit(["-c", "core.quotepath=false", "diff", "--cached"], {
+        tolerateError: true,
+      });
+    }
   }
 
   if (binaryFiles.length > 0) {
