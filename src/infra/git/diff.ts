@@ -86,18 +86,43 @@ function getStagedFileStats(): StagedFileStat[] {
   );
   if (!output.trim()) return [];
 
+  // With -z, --numstat uses NUL-separated entries:
+  //   Normal:  "added\tdeleted\tpath"
+  //   Rename:  "added\tdeleted\t" + NUL + oldpath + NUL + newpath
+  // The rename format leaves the path field empty (just a trailing tab),
+  // so a simple per-entry regex misses renames entirely.
   const stats: StagedFileStat[] = [];
-  for (const entry of output.split("\0")) {
-    if (!entry) continue;
-    const match = entry.match(/^(\d+|-)\t(\d+|-)\t(.+)$/s);
-    if (!match) continue;
-    const added = match[1];
-    const deleted = match[2];
-    const path = match[3];
-    stats.push({
-      path,
-      isBinary: added === "-" || deleted === "-",
-    });
+  const parts = output.split("\0");
+  let i = 0;
+  while (i < parts.length) {
+    const part = parts[i];
+    if (!part) {
+      i++;
+      continue;
+    }
+    // Rename/copy: path is empty after the second tab; old and new
+    // paths follow as the next two NUL-separated fields.
+    const renameMatch = part.match(/^(\d+|-)\t(\d+|-)\t$/);
+    if (renameMatch) {
+      const newPath = parts[i + 2];
+      if (newPath) {
+        stats.push({
+          path: newPath,
+          isBinary: renameMatch[1] === "-" || renameMatch[2] === "-",
+        });
+      }
+      i += 3;
+      continue;
+    }
+    // Normal entry: all three fields in one NUL-separated chunk.
+    const match = part.match(/^(\d+|-)\t(\d+|-)\t(.+)$/s);
+    if (match) {
+      stats.push({
+        path: match[3],
+        isBinary: match[1] === "-" || match[2] === "-",
+      });
+    }
+    i++;
   }
   return stats;
 }
