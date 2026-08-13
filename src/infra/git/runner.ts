@@ -6,9 +6,11 @@ export interface GitExecOptions {
 
 const GIT_MAX_BUFFER = 1024 * 1024 * 1024;
 
+const GIT_GLOBAL_ARGS = ["-c", "core.quotepath=false"];
+
 export function execGit(args: string[], options: GitExecOptions = {}): string {
   try {
-    return execFileSync("git", args, {
+    return execFileSync("git", [...GIT_GLOBAL_ARGS, ...args], {
       cwd: process.cwd(),
       encoding: "utf-8",
       maxBuffer: GIT_MAX_BUFFER,

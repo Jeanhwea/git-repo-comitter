@@ -5,21 +5,8 @@ type NewFileScope = "staged" | "unstaged";
 function listNewFiles(scope: NewFileScope): string[] {
   const args =
     scope === "staged"
-      ? [
-          "-c",
-          "core.quotepath=false",
-          "diff",
-          "--cached",
-          "--name-status",
-          "--diff-filter=A",
-        ]
-      : [
-          "-c",
-          "core.quotepath=false",
-          "diff",
-          "--name-status",
-          "--diff-filter=A",
-        ];
+      ? ["diff", "--cached", "--name-status", "--diff-filter=A"]
+      : ["diff", "--name-status", "--diff-filter=A"];
   const output = execGit(args, { tolerateError: true });
   if (!output.trim()) return [];
   return output
@@ -80,10 +67,9 @@ interface StagedFileStat {
 }
 
 function getStagedFileStats(): StagedFileStat[] {
-  const output = execGit(
-    ["-c", "core.quotepath=false", "diff", "--cached", "-z", "--numstat"],
-    { tolerateError: true },
-  );
+  const output = execGit(["diff", "--cached", "-z", "--numstat"], {
+    tolerateError: true,
+  });
   if (!output.trim()) return [];
 
   // With -z, --numstat uses NUL-separated entries:
@@ -136,7 +122,7 @@ export function getStagedDiff(): string {
 
   let diff = "";
   if (textFiles.length > 0) {
-    const args = ["-c", "core.quotepath=false", "diff", "--cached"];
+    const args = ["diff", "--cached"];
     if (binaryFiles.length > 0) {
       args.push("--", ":(top)");
       for (const file of binaryFiles) {
@@ -145,7 +131,7 @@ export function getStagedDiff(): string {
     }
     diff = execGit(args, { tolerateError: true });
     if (!diff.trim() && binaryFiles.length > 0) {
-      diff = execGit(["-c", "core.quotepath=false", "diff", "--cached"], {
+      diff = execGit(["diff", "--cached"], {
         tolerateError: true,
       });
     }
