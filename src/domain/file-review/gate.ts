@@ -3,10 +3,7 @@ import { question } from "@/app/cli/input";
 import type { AppConfig } from "@/infra/config/types";
 import {
   getNewFileContents,
-  getStagedNewFiles,
-  hasStagedChanges,
 } from "@/infra/git/diff";
-import { gitReset } from "@/infra/git/runner";
 
 import { reviewNewFiles } from "./reviewer";
 
