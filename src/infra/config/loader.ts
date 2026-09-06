@@ -72,6 +72,7 @@ async function clampLlmConfig(
       saveUserConfig({
         ...userConfig,
         llm: {
+          ...DEFAULT_CONFIG.llm,
           ...(userConfig.llm || {}),
           maxOutputTokens: DEFAULT_CONFIG.llm.maxOutputTokens,
         },
