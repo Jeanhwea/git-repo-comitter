@@ -31,6 +31,7 @@ function stageOrProceed(stagedOnly: boolean): void {
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
+  const startTime = performance.now();
   const config = await ensureConfig();
   if (!isGitRepo()) {
     throw new CliError(
@@ -54,5 +55,12 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
   }
   gitCommit(message);
   console.log(`提交信息：\n  ${message}\n`);
-  console.log("提交成功！");
+  const elapsed = performance.now() - startTime;
+  const timeStr =
+    elapsed >= 60_000
+      ? `${(elapsed / 60_000).toFixed(2)} min`
+      : elapsed >= 1_000
+        ? `${(elapsed / 1_000).toFixed(2)} s`
+        : `${Math.round(elapsed)} ms`;
+  console.log(`提交成功！耗时 ${timeStr}`);
 }
