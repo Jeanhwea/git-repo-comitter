@@ -1,8 +1,7 @@
-import { createInterface } from "readline/promises";
-
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
+import { createInterface } from "readline/promises";
 
 import { type AppConfig, type LLMConfig } from "./types";
 
@@ -42,35 +41,57 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
-async function clampLlmConfig(userLlm: Partial<LLMConfig> | undefined): Promise<LLMConfig> {
+async function clampLlmConfig(
+  userLlm: Partial<LLMConfig> | undefined,
+): Promise<LLMConfig> {
   const clamped = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
 
-  if (userLlm?.maxOutputTokens != null && userLlm.maxOutputTokens > DEFAULT_CONFIG.llm.maxOutputTokens) {
+  if (
+    userLlm?.maxOutputTokens != null &&
+    userLlm.maxOutputTokens > DEFAULT_CONFIG.llm.maxOutputTokens
+  ) {
     console.warn(
       `\n⚠️  警告：配置中的 maxOutputTokens (${userLlm.maxOutputTokens}) 超过了当前模型的上限 (${DEFAULT_CONFIG.llm.maxOutputTokens})。`,
     );
 
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-    const answer = (await rl.question(
-      `  是否将配置文件的 maxOutputTokens 修复为 ${DEFAULT_CONFIG.llm.maxOutputTokens}？(Y/n): `,
-    )).trim().toLowerCase();
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    const answer = (
+      await rl.question(
+        `  是否将配置文件的 maxOutputTokens 修复为 ${DEFAULT_CONFIG.llm.maxOutputTokens}？(Y/n): `,
+      )
+    )
+      .trim()
+      .toLowerCase();
     rl.close();
 
     if (answer === "" || answer === "y" || answer === "yes") {
       const userConfig = loadUserConfig();
       saveUserConfig({
         ...userConfig,
-        llm: { ...(userConfig.llm || {}), maxOutputTokens: DEFAULT_CONFIG.llm.maxOutputTokens },
+        llm: {
+          ...(userConfig.llm || {}),
+          maxOutputTokens: DEFAULT_CONFIG.llm.maxOutputTokens,
+        },
       });
-      console.log(`  ✅ 已修复，maxOutputTokens 已设为 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`);
+      console.log(
+        `  ✅ 已修复，maxOutputTokens 已设为 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`,
+      );
     } else {
-      console.log(`  ℹ️  跳过修复，本次仍取较小值 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`);
+      console.log(
+        `  ℹ️  跳过修复，本次仍取较小值 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`,
+      );
     }
 
     clamped.maxOutputTokens = DEFAULT_CONFIG.llm.maxOutputTokens;
   }
 
-  if (userLlm?.maxInputTokens != null && userLlm.maxInputTokens > DEFAULT_CONFIG.llm.maxInputTokens) {
+  if (
+    userLlm?.maxInputTokens != null &&
+    userLlm.maxInputTokens > DEFAULT_CONFIG.llm.maxInputTokens
+  ) {
     console.warn(
       `\n⚠️  警告：配置中的 maxInputTokens (${userLlm.maxInputTokens}) 超过了当前模型的上限 (${DEFAULT_CONFIG.llm.maxInputTokens})，将自动取较小值 ${DEFAULT_CONFIG.llm.maxInputTokens}。`,
     );
