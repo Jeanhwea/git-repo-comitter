@@ -5,6 +5,7 @@ import { loadConfig } from "@/infra/config/loader";
 import type { AppConfig } from "@/infra/config/types";
 import { getStagedDiff, hasStagedChanges } from "@/infra/git/diff";
 import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/runner";
+import { formatElapsed } from "@/utils/format-time";
 
 export interface CommitOptions {
   stagedOnly?: boolean;
@@ -56,11 +57,5 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
   gitCommit(message);
   console.log(`提交信息：\n  ${message}\n`);
   const elapsed = performance.now() - startTime;
-  const timeStr =
-    elapsed >= 60_000
-      ? `${(elapsed / 60_000).toFixed(2)} min`
-      : elapsed >= 1_000
-        ? `${(elapsed / 1_000).toFixed(2)} s`
-        : `${Math.round(elapsed)} ms`;
-  console.log(`提交成功！耗时 ${timeStr}`);
+  console.log(`提交成功！耗时 ${formatElapsed(elapsed)}`);
 }
