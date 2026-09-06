@@ -1,8 +1,10 @@
+import { createInterface } from "readline/promises";
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
 
-import { type AppConfig } from "./types";
+import { type AppConfig, type LLMConfig } from "./types";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 
@@ -40,16 +42,51 @@ export function saveUserConfig(config: Partial<AppConfig>): void {
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
-export function loadConfig(): AppConfig {
+async function clampLlmConfig(userLlm: Partial<LLMConfig> | undefined): Promise<LLMConfig> {
+  const clamped = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
+
+  if (userLlm?.maxOutputTokens != null && userLlm.maxOutputTokens > DEFAULT_CONFIG.llm.maxOutputTokens) {
+    console.warn(
+      `\n⚠️  警告：配置中的 maxOutputTokens (${userLlm.maxOutputTokens}) 超过了当前模型的上限 (${DEFAULT_CONFIG.llm.maxOutputTokens})。`,
+    );
+
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const answer = (await rl.question(
+      `  是否将配置文件的 maxOutputTokens 修复为 ${DEFAULT_CONFIG.llm.maxOutputTokens}？(Y/n): `,
+    )).trim().toLowerCase();
+    rl.close();
+
+    if (answer === "" || answer === "y" || answer === "yes") {
+      const userConfig = loadUserConfig();
+      saveUserConfig({
+        ...userConfig,
+        llm: { ...(userConfig.llm || {}), maxOutputTokens: DEFAULT_CONFIG.llm.maxOutputTokens },
+      });
+      console.log(`  ✅ 已修复，maxOutputTokens 已设为 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`);
+    } else {
+      console.log(`  ℹ️  跳过修复，本次仍取较小值 ${DEFAULT_CONFIG.llm.maxOutputTokens}。`);
+    }
+
+    clamped.maxOutputTokens = DEFAULT_CONFIG.llm.maxOutputTokens;
+  }
+
+  if (userLlm?.maxInputTokens != null && userLlm.maxInputTokens > DEFAULT_CONFIG.llm.maxInputTokens) {
+    console.warn(
+      `\n⚠️  警告：配置中的 maxInputTokens (${userLlm.maxInputTokens}) 超过了当前模型的上限 (${DEFAULT_CONFIG.llm.maxInputTokens})，将自动取较小值 ${DEFAULT_CONFIG.llm.maxInputTokens}。`,
+    );
+    clamped.maxInputTokens = DEFAULT_CONFIG.llm.maxInputTokens;
+  }
+
+  return clamped;
+}
+
+export async function loadConfig(): Promise<AppConfig> {
   const userConfig = loadUserConfig();
 
   return {
     ...DEFAULT_CONFIG,
     ...userConfig,
-    llm: {
-      ...DEFAULT_CONFIG.llm,
-      ...(userConfig.llm || {}),
-    },
+    llm: await clampLlmConfig(userConfig.llm),
     apiKey: userConfig.apiKey || "",
     endpoint: userConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };

@@ -10,8 +10,8 @@ export interface CommitOptions {
   stagedOnly?: boolean;
 }
 
-function ensureConfig(): AppConfig {
-  const config = loadConfig();
+async function ensureConfig(): Promise<AppConfig> {
+  const config = await loadConfig();
   if (!config.apiKey) {
     throw new CliError("API Key 未设置，请运行 `grc init` 进行配置。");
   }
@@ -31,7 +31,7 @@ function stageOrProceed(stagedOnly: boolean): void {
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
-  const config = ensureConfig();
+  const config = await ensureConfig();
   if (!isGitRepo()) {
     throw new CliError(
       "当前目录不是 git 仓库，请确保在 git 仓库中执行 grc 命令",
