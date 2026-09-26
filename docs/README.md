@@ -1,3 +1,8 @@
+---
+title: git-repo-committer 文档索引
+description: grc 项目的所有规格、功能和问题改进文档的索引目录
+---
+
 # git-repo-committer 文档
 
 ## 项目概述
