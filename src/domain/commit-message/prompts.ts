@@ -1,9 +1,12 @@
+import { LANGUAGE_RULES } from "@/domain/shared/language";
+
 /**
  * 提示词统一采用 XML 节标记组织，各节职责如下：
  *
  * - role：角色定义
  * - context：执行上下文（输入来源、输出用途）
  * - task：核心任务
+ * - language：输出语言约束（跨领域共用）
  * - commit_types：Conventional Commits 类型参考表
  * - rules：编号规则，一律使用「必须 / 禁止」等强约束表述
  * - examples：编号示例
@@ -52,14 +55,16 @@ export const SYSTEM_PROMPT = `<role>
 分析 diff 中的全部变更，产出一条符合 Conventional Commits 规范的提交信息。
 </task>
 
+${LANGUAGE_RULES}
+
 ${COMMIT_TYPES}
 
 <rules>
 1. 标题行必须形如 type[(scope)][!]: description，其中 type 必填且必须取自 commit_types，scope 与 ! 可选。
 2. 必须使用半角冒号后接一个半角空格分隔，禁止使用全角冒号；scope 必须使用小写英文并以连字符分词，禁止包含空格或右圆括号；无法确定 scope 时必须省略。
 3. ${TYPE_SELECTION}
-4. description 必须使用简体中文，禁止整句使用英文；专有名词、命令名、文件路径、代码标识符可保留原文。
-5. description 必须以动词开头（如修复、新增、优化、移除），禁止以句号结尾，禁止使用「修改了」「更新了」等无信息量的措辞。
+4. description 必须以动词开头（如修复、新增、优化、移除），禁止以句号结尾，禁止使用「修改了」「更新了」等无信息量的措辞。
+5. description 的语言与标点必须遵守 language 节。
 6. 标题行长度必须不超过 78 个字符；超长时必须压缩描述，禁止直接截断。
 7. 破坏性变更必须在 type 或 scope 后添加 ! 标记，并在脚注中补充一行 BREAKING CHANGE: 影响说明。
 8. 正文必须与标题相隔一个空行；每条要点以半角连字符加空格 "- " 开头并独占一行，每行不超过 78 个字符，要点数量不超过 5 条。
@@ -138,12 +143,14 @@ export const PARTIAL_SYSTEM_PROMPT = `<role>
 仅针对当前收到的这部分 diff，生成一条局部的提交信息草稿，并保留足够的文件线索供后续合并去重。
 </task>
 
+${LANGUAGE_RULES}
+
 ${COMMIT_TYPES}
 
 <rules>
 1. 标题行必须形如 type[(scope)][!]: description，其中 type 必填且必须取自 commit_types，scope 与 ! 可选；必须使用半角冒号后接一个半角空格，scope 为小写英文。
 2. ${TYPE_SELECTION}
-3. 标题行长度必须不超过 78 个字符；description 必须使用简体中文并以动词开头，禁止以句号结尾。
+3. 标题行长度必须不超过 78 个字符；description 以动词开头，禁止以句号结尾；语言与标点遵守 language 节。
 4. 只描述当前这部分 diff 中实际出现的变更，禁止推测或补全省略部分的内容。
 5. 正文要点必须点出受影响的关键文件名或模块名（供后续合并时去重），以 "- " 开头并独占一行，每行不超过 78 个字符，要点数量不超过 5 条。
 6. 禁止出现「其余变更」「完整改动见其他部分」「以上为全部变更」等指向整体的表述，禁止写入批次编号或分隔标记。
@@ -190,6 +197,8 @@ export const MERGE_SYSTEM_PROMPT = `<role>
 将所有局部草稿合并为一条完整、连贯的提交信息，作为最终的 git commit 信息。
 </task>
 
+${LANGUAGE_RULES}
+
 ${COMMIT_TYPES}
 
 <rules>
@@ -198,7 +207,7 @@ ${COMMIT_TYPES}
 3. type 必须选择最能概括全部草稿的变更且只取唯一结果：全部草稿同类时取该类型；类型冲突时按 fix、feat、refactor、perf、build、ci、docs、style、test、chore 的次序取其一。
 4. 任一草稿含破坏性变更时，必须保留 ! 标记与 BREAKING CHANGE: 脚注。
 5. scope 必须覆盖多数草稿涉及的模块；草稿之间 scope 冲突或跨模块过多时必须省略 scope。
-6. 标题行长度必须不超过 78 个字符；description 必须使用简体中文，以动词开头，概括整体变更而非罗列细节，禁止以句号结尾。
+6. 标题行长度必须不超过 78 个字符；description 以动词开头，概括整体变更而非罗列细节，禁止以句号结尾；语言与标点遵守 language 节。
 7. 必须合并所有草稿的要点并去重：依据要点中的文件名判断，同一文件的多条描述必须合并为一条，禁止保留重复条目。
 8. 草稿对同一文件的描述冲突时，必须保留更具体、更贴近事实的那一条，禁止并列矛盾表述，禁止引入草稿之外的新信息。
 9. 正文要点必须按主题（模块或变更性质）分组，以 "- " 开头并独占一行，每行不超过 78 个字符，合并后要点数量不超过 5 条。
