@@ -1,6 +1,7 @@
 ---
 title: git-repo-committer 文档索引
 description: grc 项目的所有规格、功能和问题改进文档的索引目录
+date: 2026-09-26
 ---
 
 # git-repo-committer 文档
