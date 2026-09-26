@@ -36,11 +36,7 @@ const COMMIT_TYPES = `<commit_types>
  * type 判定优先级。
  * 由三个提交相关提示词共用，保证同一份 diff 在生成、分批、合并各阶段选出一致的 type。
  */
-const TYPE_SELECTION = `type 必须按以下顺序判定且只取唯一结果，禁止堆叠多个 type：
-修正既有缺陷 → fix；新增用户可见的功能、接口或命令 → feat；仅调整代码结构而不改变外部行为 → refactor；
-仅提升执行性能或降低资源占用 → perf；仅调整代码格式 → style；仅改动测试用例 → test；
-仅改动文档或注释 → docs；改动构建系统或外部依赖 → build；改动持续集成流水线配置 → ci；
-回退已有提交 → revert；以上均不适用 → chore。混合变更时必须按主要意图判定，次要变更在正文中补述。`;
+const TYPE_SELECTION = `type 必须按以下顺序判定且只取唯一结果，禁止堆叠多个 type：修正既有缺陷 → fix；新增用户可见的功能、接口或命令 → feat；仅调整代码结构而不改变外部行为 → refactor；仅提升执行性能或降低资源占用 → perf；仅调整代码格式 → style；仅改动测试用例 → test；仅改动文档或注释 → docs；改动构建系统或外部依赖 → build；改动持续集成流水线配置 → ci；回退已有提交 → revert；以上均不适用 → chore。混合变更时必须按主要意图判定，次要变更在正文中补述。`;
 
 export const SYSTEM_PROMPT = `<role>
 你是一位 Git 提交信息专家，擅长把代码变更提炼为准确、简洁、规范的提交信息。
