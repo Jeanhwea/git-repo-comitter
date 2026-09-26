@@ -3,7 +3,11 @@ import type OpenAI from "openai";
 import type { AppConfig } from "@/infra/config/types";
 import { type ValidationOutcome, callWithValidation } from "@/infra/llm/retry";
 
-import { REVIEW_SYSTEM_PROMPT } from "./prompts";
+import {
+  REVIEW_SYSTEM_PROMPT,
+  reviewRepairHint,
+  wrapNewFiles,
+} from "./prompts";
 
 export interface ReviewResult {
   shouldCommit: boolean;
@@ -27,18 +31,15 @@ export async function reviewNewFiles(
   newFileContents: { path: string; content: string }[],
   config: AppConfig,
 ): Promise<ReviewResult> {
-  const fileList = newFileContents
-    .map((f) => `路径: ${f.path}\n内容:\n${f.content}`)
-    .join("\n\n---\n\n");
-
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: REVIEW_SYSTEM_PROMPT },
-    { role: "user", content: `请审查以下新增文件：\n\n${fileList}` },
+    { role: "user", content: wrapNewFiles(newFileContents) },
   ];
 
   return callWithValidation<ReviewResult>(config, messages, {
     label: "审查结果",
     temperatureOverride: 0,
     validate: reviewValidator,
+    repairHint: reviewRepairHint,
   });
 }

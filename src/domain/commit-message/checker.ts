@@ -1,7 +1,10 @@
 import type { ValidationOutcome } from "@/infra/llm/retry";
 
 export const commitMessageRepairHint = (reason: string): string =>
-  `生成的提交信息格式不符合规范：${reason}。请严格按照 Conventional Commits 格式重新生成。`;
+  `上一次输出未通过校验：${reason}。\n` +
+  `请逐条对照系统提示词中的 rules 与 output 节重新生成提交信息：` +
+  `标题使用半角冒号加空格、type 取自 commit_types、标题与正文每行不超过 78 个字符。` +
+  `只输出提交信息本身，禁止添加任何解释或代码围栏。`;
 
 const ALLOWED_TYPES = [
   "feat",

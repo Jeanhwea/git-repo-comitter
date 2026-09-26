@@ -11,6 +11,10 @@ import {
   MERGE_SYSTEM_PROMPT,
   PARTIAL_SYSTEM_PROMPT,
   SYSTEM_PROMPT,
+  wrapDraft,
+  wrapDrafts,
+  wrapOmissionNotice,
+  wrapPartialDiff,
 } from "./prompts";
 import {
   collapseLargeBlocks,
@@ -39,7 +43,7 @@ async function generatePartialMessage(
   diffContent: string,
   config: AppConfig,
 ): Promise<string> {
-  const userContent = `以下是 Git diff 的一部分：\n\n${diffContent}`;
+  const userContent = wrapPartialDiff(diffContent);
   const content = await singleTurn(config, PARTIAL_SYSTEM_PROMPT, userContent);
   if (!content) {
     throw new Error("LLM 在处理分批 diff 时返回了空内容。");
@@ -57,7 +61,7 @@ function buildMergeMessages(
   let omitted = 0;
 
   for (let i = 0; i < partialMessages.length; i++) {
-    const part = `--- 部分 ${i + 1} ---\n${partialMessages[i]}`;
+    const part = wrapDraft(i + 1, partialMessages[i]);
     const partTokens = estimateTokens(part);
     if (totalTokens + partTokens > limit) {
       omitted = partialMessages.length - i;
@@ -68,8 +72,8 @@ function buildMergeMessages(
   }
 
   const userContent =
-    parts.join("\n\n") +
-    (omitted > 0 ? `\n\n[... 前面 ${omitted} 个批次已省略 ...]` : "");
+    wrapDrafts(parts) +
+    (omitted > 0 ? `\n\n${wrapOmissionNotice(omitted)}` : "");
 
   return [
     { role: "system", content: MERGE_SYSTEM_PROMPT },
