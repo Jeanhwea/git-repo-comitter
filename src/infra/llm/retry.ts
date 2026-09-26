@@ -31,7 +31,7 @@ export async function callWithValidation<T>(
   const repairHint =
     options.repairHint ??
     ((reason) =>
-      `上一次输出的${label}未通过校验：${reason}。请严格按照要求重新生成，只输出结果本身，禁止添加任何解释或代码围栏。`);
+      `上一次输出的${label}未通过校验：${reason}。必须严格按照系统提示词的要求重新生成：只输出结果本身，禁止添加任何解释或代码围栏；输出语言必须与系统提示词的要求一致。`);
   let lastMessage: string | null = options.initialMessage ?? null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
