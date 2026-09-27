@@ -1,8 +1,12 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "@/infra/config/types";
+import { formatElapsed } from "@/utils/format-time";
+import { createLogger } from "@/utils/logger";
 
 import { extractContent } from "./response";
+
+const log = createLogger("llm");
 
 export function createClient(config: AppConfig): OpenAI {
   if (!config.apiKey) {
@@ -20,12 +24,17 @@ export async function chatCompletion(
   temperatureOverride?: number,
 ): Promise<string> {
   const client = createClient(config);
+  log.trace(
+    `调用 LLM model=${config.llm.model} temperature=${temperatureOverride ?? config.llm.temperature} 消息数=${messages.length}`,
+  );
+  const t0 = performance.now();
   const response = await client.chat.completions.create({
     model: config.llm.model,
     temperature: temperatureOverride ?? config.llm.temperature,
     max_tokens: config.llm.maxOutputTokens,
     messages,
   });
+  log.trace(`LLM 返回耗时 ${formatElapsed(performance.now() - t0)}`);
   return extractContent(response);
 }
 

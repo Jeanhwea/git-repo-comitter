@@ -2,12 +2,15 @@ import type OpenAI from "openai";
 
 import type { AppConfig } from "@/infra/config/types";
 import { type ValidationOutcome, callWithValidation } from "@/infra/llm/retry";
+import { createLogger } from "@/utils/logger";
 
 import {
   REVIEW_SYSTEM_PROMPT,
   reviewRepairHint,
   wrapNewFiles,
 } from "./prompts";
+
+const log = createLogger("review");
 
 export interface ReviewResult {
   shouldCommit: boolean;
@@ -79,10 +82,17 @@ export async function reviewNewFiles(
     { role: "user", content: wrapNewFiles(newFileContents) },
   ];
 
-  return callWithValidation<ReviewResult>(config, messages, {
+  log.debug(`开始审查 ${newFileContents.length} 个新增文件`);
+  const result = await callWithValidation<ReviewResult>(config, messages, {
     label: "审查结果",
     temperatureOverride: 0,
     validate: reviewValidator,
     repairHint: reviewRepairHint,
   });
+  log.trace("审查结论", {
+    shouldCommit: result.shouldCommit,
+    suspiciousFiles: result.suspiciousFiles,
+    reason: result.reason,
+  });
+  return result;
 }

@@ -3,7 +3,9 @@ import OpenAI from "openai";
 import type { AppConfig } from "@/infra/config/types";
 import { callWithValidation } from "@/infra/llm/retry";
 import { estimateTokens } from "@/infra/llm/tokens";
-import { chatCompletion, singleTurn } from "@/infra/llm/transport/client";
+import { singleTurn } from "@/infra/llm/transport/client";
+import { formatElapsed } from "@/utils/format-time";
+import { createLogger } from "@/utils/logger";
 
 import { commitMessageRepairHint, validateCommitMessage } from "./checker";
 import { generateCommitMessage } from "./generator";
@@ -21,6 +23,8 @@ import {
   groupIntoBatches,
   parseDiffBlocks,
 } from "./split";
+
+const log = createLogger("batch");
 
 const FRAMING_OVERHEAD = 200;
 const SAFETY_MARGIN_RATIO = 0.05;
@@ -44,10 +48,15 @@ async function generatePartialMessage(
   config: AppConfig,
 ): Promise<string> {
   const userContent = wrapPartialDiff(diffContent);
+  log.trace(`分批生成提交信息，输入约 ${estimateTokens(userContent)} tokens`);
+  const t0 = performance.now();
   const content = await singleTurn(config, PARTIAL_SYSTEM_PROMPT, userContent);
   if (!content) {
     throw new Error("LLM 在处理分批 diff 时返回了空内容。");
   }
+  log.trace(
+    `分批生成完成，输出 ${content.length} 字符（耗时 ${formatElapsed(performance.now() - t0)}）`,
+  );
   return content;
 }
 
@@ -74,7 +83,7 @@ function buildMergeMessages(
   if (parts.length === 0) {
     throw new Error(
       `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
-      `请增大 maxInputTokens 或选择更大上下文的模型。`,
+        `请增大 maxInputTokens 或选择更大上下文的模型。`,
     );
   }
 
@@ -94,8 +103,10 @@ export async function generateCommitMessageBatched(
 ): Promise<BatchResult> {
   const limit = effectiveLimit(config, SYSTEM_PROMPT);
   const diffTokens = estimateTokens(diff);
+  log.debug(`开始生成：diff 约 ${diffTokens} tokens，单批上限 ${limit} tokens`);
 
   if (diffTokens <= limit) {
+    log.debug("diff 未超出单批上限，直接生成");
     const message = await generateCommitMessage(diff, config);
     return { message, batchCount: 1 };
   }
@@ -103,11 +114,15 @@ export async function generateCommitMessageBatched(
   const blocks = collapseLargeBlocks(parseDiffBlocks(diff), limit);
   const collapsedDiff = blocks.map((b) => b.content).join("\n");
   if (estimateTokens(collapsedDiff) <= limit) {
+    log.debug(
+      `合并大块后约 ${estimateTokens(collapsedDiff)} tokens，单批可容纳`,
+    );
     const message = await generateCommitMessage(collapsedDiff, config);
     return { message, batchCount: 1 };
   }
 
   const batches = groupIntoBatches(blocks, limit);
+  log.debug(`拆分为 ${batches.length} 个批次（按 token 上限切分）`);
 
   console.log(
     `  变更内容较大（约 ${diffTokens} tokens），将分为 ${batches.length} 批次处理...`,

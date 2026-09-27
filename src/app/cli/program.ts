@@ -4,6 +4,8 @@ import { resolve } from "path";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";
+import { setLogLevel } from "@/utils/logger";
+import type { LogLevel } from "@/utils/logger";
 
 import { CliError } from "./errors";
 
@@ -29,7 +31,21 @@ program
   .version(getVersion(), "-v, --version", "显示当前版本")
   .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具")
   .helpOption("-h, --help", "显示帮助信息")
-  .option("-s, --staged-only", "仅提交已暂存的变更");
+  .option("-s, --staged-only", "仅提交已暂存的变更")
+  .option("-V, --verbose", "输出详细进度日志（debug 级别）")
+  .option("--debug", "同 --verbose，输出 debug 级别日志")
+  .option("--trace", "输出最详细的追踪日志（trace 级别）");
+
+function applyLogLevel(options: {
+  verbose?: boolean;
+  debug?: boolean;
+  trace?: boolean;
+}): void {
+  let level: LogLevel = "info";
+  if (options.trace) level = "trace";
+  else if (options.debug || options.verbose) level = "debug";
+  setLogLevel(level);
+}
 
 program
   .command("init")
@@ -39,6 +55,7 @@ program
   });
 
 program.action((options) => {
+  applyLogLevel(options);
   runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
 });
 

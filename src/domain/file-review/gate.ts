@@ -2,18 +2,28 @@ import { CliError } from "@/app/cli/errors";
 import { question } from "@/app/cli/input";
 import type { AppConfig } from "@/infra/config/types";
 import { getNewFileContents } from "@/infra/git/diff";
+import { createLogger } from "@/utils/logger";
 
 import { reviewNewFiles } from "./reviewer";
+
+const log = createLogger("review");
 
 export async function runReviewGate(
   config: AppConfig,
   stagedOnly: boolean,
 ): Promise<void> {
   const newFiles = getNewFileContents(stagedOnly);
-  if (newFiles.length === 0) return;
+  if (newFiles.length === 0) {
+    log.debug("未检测到新增文件，跳过审查门禁");
+    return;
+  }
+  log.debug(`检测到 ${newFiles.length} 个新增文件，进入审查门禁`);
 
   const result = await reviewNewFiles(newFiles, config);
-  if (result.shouldCommit) return;
+  if (result.shouldCommit) {
+    log.debug("审查通过，允许提交");
+    return;
+  }
 
   console.log("LLM 审查发现以下文件疑似不需要提交：");
   for (const file of result.suspiciousFiles) {

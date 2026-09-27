@@ -1,8 +1,12 @@
 import type OpenAI from "openai";
 
 import type { AppConfig } from "@/infra/config/types";
+import { formatElapsed } from "@/utils/format-time";
+import { createLogger } from "@/utils/logger";
 
 import { chatCompletion } from "./transport/client";
+
+const log = createLogger("llm");
 
 export const MAX_RETRIES = 3;
 
@@ -36,11 +40,14 @@ export async function callWithValidation<T>(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (lastMessage === null) {
+      log.debug(`生成${label}：第 ${attempt}/${maxAttempts} 次尝试`);
+      const t0 = performance.now();
       lastMessage = await chatCompletion(
         config,
         messages,
         options.temperatureOverride,
       );
+      log.trace(`LLM 调用返回，耗时 ${formatElapsed(performance.now() - t0)}`);
       if (!lastMessage) {
         throw new Error(`LLM 在生成${label}时返回了空内容。`);
       }
@@ -52,6 +59,9 @@ export async function callWithValidation<T>(
     if (outcome.valid) return outcome.value as T;
 
     if (attempt < maxAttempts) {
+      log.debug(
+        `${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`,
+      );
       console.log(
         `  ${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`,
       );
