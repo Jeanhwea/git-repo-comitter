@@ -5,13 +5,13 @@ import { estimateTokens } from "@/shared/tokens";
  * 从 domain/commit-message/split.ts 迁入：按文件把 diff 切成块、对超大块折叠、再按 token 上限分组。
  */
 
-export interface DiffBlock {
+interface DiffBlock {
   filePath: string;
   content: string;
   estimatedTokens: number;
 }
 
-export interface DiffBatch {
+interface DiffBatch {
   blocks: DiffBlock[];
   content: string;
   estimatedTokens: number;

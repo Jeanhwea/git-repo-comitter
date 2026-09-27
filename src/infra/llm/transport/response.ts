@@ -5,20 +5,20 @@
  * 且命名带上 Llm 前缀，避免与 openai 官方的 ChatCompletion* 类型混淆。
  */
 
-export interface LlmContentPart {
+interface LlmContentPart {
   type: string;
   text: string;
 }
 
-export interface LlmMessage {
+interface LlmMessage {
   content: string | LlmContentPart[] | null;
 }
 
-export interface LlmChoice {
+interface LlmChoice {
   message: LlmMessage;
 }
 
-export interface LlmChatResponse {
+interface LlmChatResponse {
   choices: LlmChoice[];
 }
 

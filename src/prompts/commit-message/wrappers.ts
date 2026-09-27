@@ -15,11 +15,11 @@ export const wrapDraft = (index: number, draft: string): string =>
   `<draft index="${index}">\n${draft}\n</draft>`;
 
 /** 包裹草稿集合（若干条已包裹好的草稿文本）。 */
-export const wrapDraftList = (drafts: string[]): string =>
+const wrapDraftList = (drafts: string[]): string =>
   `<drafts>\n${drafts.join("\n\n")}\n</drafts>`;
 
 /** 合并时因长度限制被丢弃的批次提示。 */
-export const wrapOmissionNotice = (count: number): string =>
+const wrapOmissionNotice = (count: number): string =>
   `<notice>另有 ${count} 个批次的草稿因长度限制已省略</notice>`;
 
 /** 合并阶段的输入：已按 token 预算裁剪好的草稿文本，以及被丢弃的批次数。 */

@@ -10,7 +10,7 @@ export interface NewFileContent {
 }
 
 /** 包裹单个新增文件，路径写在 path 属性、内容字符数写在 size 属性上。 */
-export const wrapNewFile = (path: string, content: string): string =>
+const wrapNewFile = (path: string, content: string): string =>
   `<file path="${path}" size="${content.length}">\n${content}\n</file>`;
 
 /** 包裹全部新增文件。 */

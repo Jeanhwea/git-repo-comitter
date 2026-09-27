@@ -1,6 +1,6 @@
 import type OpenAI from "openai";
 
-export type ChatMessage = OpenAI.ChatCompletionMessageParam;
+type ChatMessage = OpenAI.ChatCompletionMessageParam;
 
 /**
  * 一条提示词的完整定义。

@@ -12,7 +12,7 @@ import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
 import { wrapDiff } from "./wrappers";
 
-export const COMMIT_SYSTEM_PROMPT = `${COMMIT_ROLE}
+const COMMIT_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
 <context>
 你会收到一份来自暂存区的 Git diff（以 diff 标记包裹）。需要将其转换为一条可直接用于 git commit 的提交信息。

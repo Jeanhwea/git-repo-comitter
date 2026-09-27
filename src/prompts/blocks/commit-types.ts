@@ -17,7 +17,7 @@ export const COMMIT_TYPES = `<commit_types>
  * type 判定优先级（单一来源）：生成、分批、合并三阶段共用，保证选出一致的 type。
  * 每项 = 判定释义 + 对应 type，按次序从前到后裁决。
  */
-export const TYPE_PRIORITY_LIST = [
+const TYPE_PRIORITY_LIST = [
   { type: "fix", hint: "修正既有缺陷" },
   { type: "feat", hint: "新增用户可见的功能、接口或命令" },
   { type: "refactor", hint: "仅调整代码结构而不改变外部行为" },

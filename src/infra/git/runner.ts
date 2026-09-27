@@ -7,7 +7,7 @@
  */
 import { execFileSync } from "child_process";
 
-export interface GitExecOptions {
+interface GitExecOptions {
   /** 命令失败时返回空串而不抛出（用于「有没有」这类探测式调用）。 */
   allowFailure?: boolean;
 }
