@@ -12,7 +12,7 @@ import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
 import { wrapPartialDiff } from "./wrappers";
 
-export const PARTIAL_SYSTEM_PROMPT = `${COMMIT_ROLE}
+const PARTIAL_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
 <context>
 你会收到一个大型 Git diff 的其中一部分（以 diff_part 标记包裹），只包含部分文件的变更。本次产出只是其中一条草稿，后续会与其他批次的草稿合并为一条完整的提交信息。

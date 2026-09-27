@@ -12,7 +12,7 @@ import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
 import { type MergeDraftsInput, wrapDraftsForMerge } from "./wrappers";
 
-export const MERGE_SYSTEM_PROMPT = `${COMMIT_ROLE}
+const MERGE_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
 <context>
 你会收到多条草稿，每条以 draft 标记包裹并带 index 序号，整体包在 drafts 标记内；若因长度限制丢弃了部分批次，还会附一条 notice 标记说明省略的批次数。这些草稿来自同一份大 diff 的不同批次，需要合并为一条最终提交信息。
