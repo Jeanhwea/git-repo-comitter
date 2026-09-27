@@ -1,56 +1,52 @@
-import OpenAI from "openai";
-
-import type { AppConfig } from "@/infra/config/types";
-import { callWithValidation } from "@/infra/llm/retry";
-import { estimateTokens } from "@/infra/llm/tokens";
-import { singleTurn } from "@/infra/llm/transport/client";
-import { formatElapsed } from "@/utils/format-time";
-import { createLogger } from "@/utils/logger";
-
-import { commitMessageRepairHint, validateCommitMessage } from "./checker";
-import { generateCommitMessage } from "./generator";
-import {
-  MERGE_SYSTEM_PROMPT,
-  PARTIAL_SYSTEM_PROMPT,
-  SYSTEM_PROMPT,
-  wrapDraft,
-  wrapDrafts,
-  wrapOmissionNotice,
-  wrapPartialDiff,
-} from "./prompts";
+/**
+ * 领域层 —— 分批生成流水线编排。
+ *
+ * 职责只有编排：判断是否超预算、切块折叠、逐批生成、合并草稿。
+ * token 预算计算已下沉到 infra/llm/budget（I06 的 P5），
+ * 消息组装统一走 prompts.buildMessages，不再自行拼 system/user。
+ */
+import type { AppConfig } from "@/config/types";
 import {
   collapseLargeBlocks,
   groupIntoBatches,
   parseDiffBlocks,
-} from "./split";
+} from "@/infra/git/diff";
+import { effectiveLimit, fitWithinBudget } from "@/infra/llm/budget";
+import { callWithValidation } from "@/infra/llm/retry";
+import { chatCompletion } from "@/infra/llm/transport/client";
+import {
+  buildMessages,
+  commitMessagePrompt,
+  commitMessageRepairHint,
+  mergeCommitPrompt,
+  partialCommitPrompt,
+  wrapDraft,
+  wrapPartialDiff,
+} from "@/prompts";
+import { createLogger } from "@/shared/logger";
+import { formatElapsed } from "@/shared/time";
+import { estimateTokens } from "@/shared/tokens";
+
+import { validateCommitMessage } from "./checker";
+import { generateCommitMessage } from "./generator";
 
 const log = createLogger("batch");
-
-const FRAMING_OVERHEAD = 200;
-const SAFETY_MARGIN_RATIO = 0.05;
 
 export interface BatchResult {
   message: string;
   batchCount: number;
 }
 
-function effectiveLimit(config: AppConfig, systemPrompt: string): number {
-  const raw =
-    config.llm.maxInputTokens -
-    estimateTokens(systemPrompt) -
-    FRAMING_OVERHEAD -
-    config.llm.maxOutputTokens;
-  return Math.floor(raw * (1 - SAFETY_MARGIN_RATIO));
-}
-
 async function generatePartialMessage(
   diffContent: string,
   config: AppConfig,
 ): Promise<string> {
-  const userContent = wrapPartialDiff(diffContent);
-  log.trace(`分批生成提交信息，输入约 ${estimateTokens(userContent)} tokens`);
+  const messages = buildMessages(partialCommitPrompt, diffContent);
+  log.trace(
+    `分批生成提交信息，输入约 ${estimateTokens(wrapPartialDiff(diffContent))} tokens`,
+  );
   const t0 = performance.now();
-  const content = await singleTurn(config, PARTIAL_SYSTEM_PROMPT, userContent);
+  const content = await chatCompletion(config, messages);
   if (!content) {
     throw new Error("LLM 在处理分批 diff 时返回了空内容。");
   }
@@ -60,48 +56,11 @@ async function generatePartialMessage(
   return content;
 }
 
-function buildMergeMessages(
-  partialMessages: string[],
-  config: AppConfig,
-): OpenAI.ChatCompletionMessageParam[] {
-  const limit = effectiveLimit(config, MERGE_SYSTEM_PROMPT);
-  const parts: string[] = [];
-  let totalTokens = 0;
-  let omitted = 0;
-
-  for (let i = 0; i < partialMessages.length; i++) {
-    const part = wrapDraft(i + 1, partialMessages[i]);
-    const partTokens = estimateTokens(part);
-    if (totalTokens + partTokens > limit) {
-      omitted = partialMessages.length - i;
-      break;
-    }
-    parts.push(part);
-    totalTokens += partTokens;
-  }
-
-  if (parts.length === 0) {
-    throw new Error(
-      `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
-        `请增大 maxInputTokens 或选择更大上下文的模型。`,
-    );
-  }
-
-  const userContent =
-    wrapDrafts(parts) +
-    (omitted > 0 ? `\n\n${wrapOmissionNotice(omitted)}` : "");
-
-  return [
-    { role: "system", content: MERGE_SYSTEM_PROMPT },
-    { role: "user", content: userContent },
-  ];
-}
-
 export async function generateCommitMessageBatched(
   diff: string,
   config: AppConfig,
 ): Promise<BatchResult> {
-  const limit = effectiveLimit(config, SYSTEM_PROMPT);
+  const limit = effectiveLimit(config, commitMessagePrompt.system);
   const diffTokens = estimateTokens(diff);
   log.debug(`开始生成：diff 约 ${diffTokens} tokens，单批上限 ${limit} tokens`);
 
@@ -113,10 +72,9 @@ export async function generateCommitMessageBatched(
 
   const blocks = collapseLargeBlocks(parseDiffBlocks(diff), limit);
   const collapsedDiff = blocks.map((b) => b.content).join("\n");
-  if (estimateTokens(collapsedDiff) <= limit) {
-    log.debug(
-      `合并大块后约 ${estimateTokens(collapsedDiff)} tokens，单批可容纳`,
-    );
+  const collapsedTokens = estimateTokens(collapsedDiff);
+  if (collapsedTokens <= limit) {
+    log.debug(`合并大块后约 ${collapsedTokens} tokens，单批可容纳`);
     const message = await generateCommitMessage(collapsedDiff, config);
     return { message, batchCount: 1 };
   }
@@ -136,7 +94,19 @@ export async function generateCommitMessageBatched(
   }
 
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
-  const messages = buildMergeMessages(partialMessages, config);
+  const { kept, omitted } = fitWithinBudget(
+    partialMessages.map((draft, i) => wrapDraft(i + 1, draft)),
+    effectiveLimit(config, mergeCommitPrompt.system),
+  );
+
+  if (kept.length === 0) {
+    throw new Error(
+      `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
+        `请增大 maxInputTokens 或选择更大上下文的模型。`,
+    );
+  }
+
+  const messages = buildMessages(mergeCommitPrompt, { parts: kept, omitted });
   const message = await callWithValidation(config, messages, {
     label: "合并信息",
     validate: validateCommitMessage,

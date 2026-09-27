@@ -4,6 +4,8 @@
  * 由提交信息生成（SYSTEM_PROMPT / PARTIAL_SYSTEM_PROMPT / MERGE_SYSTEM_PROMPT）
  * 与文件审查（REVIEW_SYSTEM_PROMPT）两类提示词共用，作为语言要求的唯一来源，
  * 避免同一条约束在多个提示词里各写一遍、改一处漏一处。
+ *
+ * 实体由 domain/shared/language.ts 迁入（I06 的 P4），使提示词模块不再反向依赖领域层。
  */
 export const LANGUAGE_RULES = `<language>
 1. 输出语言统一使用简体中文，禁止整句使用英文。

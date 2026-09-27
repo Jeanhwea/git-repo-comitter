@@ -1,16 +1,16 @@
-import { CliError } from "@/app/cli/errors";
+/**
+ * 应用层 —— commit 命令：串联配置校验、暂存、审查门禁、生成提交信息与提交。
+ */
+import { runReviewGate } from "@/app/steps/review";
+import { loadConfig } from "@/config/loader";
+import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
-import { runReviewGate } from "@/domain/file-review/gate";
-import { loadConfig } from "@/infra/config/loader";
-import type { AppConfig } from "@/infra/config/types";
-import {
-  getStagedDiff,
-  hasChangesToStage,
-  hasStagedChanges,
-} from "@/infra/git/diff";
-import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/runner";
-import { formatElapsed } from "@/utils/format-time";
-import { createLogger } from "@/utils/logger";
+import { hasChangesToStage, hasStagedChanges } from "@/infra/git/changes";
+import { getStagedDiff } from "@/infra/git/diff";
+import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/repo";
+import { CliError } from "@/shared/errors";
+import { createLogger } from "@/shared/logger";
+import { formatElapsed } from "@/shared/time";
 
 const log = createLogger("commit");
 
@@ -40,65 +40,63 @@ function stageOrProceed(stagedOnly: boolean): void {
   }
 }
 
-export async function runCommit(options: CommitOptions = {}): Promise<void> {
-  const startTime = performance.now();
-  const step = (label: string): number => {
-    log.debug(`步骤开始：${label}`);
-    return performance.now();
-  };
-  const done = (label: string, t0: number): void => {
+/** 按步骤记录耗时：统一「开始 / 完成」日志，避免每步重复取样。 */
+async function measure<T>(
+  label: string,
+  run: () => Promise<T> | T,
+): Promise<T> {
+  log.debug(`步骤开始：${label}`);
+  const t0 = performance.now();
+  try {
+    return await run();
+  } finally {
     log.debug(
       `步骤完成：${label}（耗时 ${formatElapsed(performance.now() - t0)}）`,
     );
-  };
+  }
+}
 
-  let t = step("加载配置");
-  const config = await ensureConfig();
+export async function runCommit(options: CommitOptions = {}): Promise<void> {
+  const startTime = performance.now();
+
+  const config = await measure("加载配置", ensureConfig);
   log.trace("已加载配置", {
     endpoint: config.endpoint,
     model: config.llm.model,
   });
-  done("加载配置", t);
 
-  t = step("校验 git 仓库");
-  if (!isGitRepo()) {
-    throw new CliError(
-      "当前目录不是 git 仓库，请确保在 git 仓库中执行 grc 命令",
-    );
-  }
-  done("校验 git 仓库", t);
+  await measure("校验 git 仓库", () => {
+    if (!isGitRepo()) {
+      throw new CliError(
+        "当前目录不是 git 仓库，请确保在 git 仓库中执行 grc 命令",
+      );
+    }
+  });
 
-  t = step("暂存变更");
-  stageOrProceed(!!options.stagedOnly);
-  done("暂存变更", t);
+  await measure("暂存变更", () => stageOrProceed(!!options.stagedOnly));
+  await measure("文件审查门禁", () =>
+    runReviewGate(config, !!options.stagedOnly),
+  );
 
-  t = step("文件审查门禁");
-  await runReviewGate(config, !!options.stagedOnly);
-  done("文件审查门禁", t);
-
-  t = step("提取暂存 diff");
-  const diff = getStagedDiff().trim() || null;
+  const diff = await measure(
+    "提取暂存 diff",
+    () => getStagedDiff().trim() || null,
+  );
   if (!diff) {
     console.log("没有可提交的变更。");
     return;
   }
   log.trace(`暂存 diff 提取完成，长度 ${diff.length} 字符`);
-  done("提取暂存 diff", t);
 
   console.log("正在生成提交信息...\n");
-  t = step("生成提交信息");
-  const { message, batchCount } = await generateCommitMessageBatched(
-    diff,
-    config,
+  const { message, batchCount } = await measure("生成提交信息", () =>
+    generateCommitMessageBatched(diff, config),
   );
-  done("生成提交信息", t);
   if (batchCount > 1) {
     console.log(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
   }
 
-  t = step("执行 git commit");
-  gitCommit(message);
-  done("执行 git commit", t);
+  await measure("执行 git commit", () => gitCommit(message));
 
   console.log(`提交信息：\n  ${message}\n`);
   const elapsed = performance.now() - startTime;

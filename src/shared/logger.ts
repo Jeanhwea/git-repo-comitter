@@ -1,12 +1,15 @@
 /**
- * 轻量级分级日志器。
+ * 轻量级分级日志器（公共层）。
  *
  * 设计目标：在不改变默认输出的前提下，提供可开关的「进度追溯」能力。
  * - 默认日志级别为 info，但业务代码中只新增 debug/trace 级别的调用，
  *   因此默认情况下这些日志不会打印，原有 console.log 的用户提示保持不变。
  * - 通过 CLI 的 --verbose / --debug / --trace 选项，或环境变量 GRC_LOG_LEVEL
  *   开启更详细的进度追踪。
+ *
+ * 时钟格式化改为复用 shared/time 的 formatClockTime（I06 的 P8），避免重复实现。
  */
+import { formatClockTime } from "./time";
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error";
 
@@ -28,20 +31,7 @@ let currentLevel: LogLevel = normalizeLevel(process.env.GRC_LOG_LEVEL);
 
 /** 运行时调整日志级别（CLI 选项在解析后调用）。 */
 export function setLogLevel(level: LogLevel): void {
-  currentLevel = normalizeLevel(level);
-}
-
-export function getLogLevel(): LogLevel {
-  return currentLevel;
-}
-
-function formatTime(): string {
-  const d = new Date();
-  const pad = (n: number, width = 2): string => String(n).padStart(width, "0");
-  return (
-    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
-    `.${pad(d.getMilliseconds(), 3)}`
-  );
+  currentLevel = level;
 }
 
 function formatArg(arg: unknown): string {
@@ -68,23 +58,18 @@ export interface Logger {
 export function createLogger(namespace: string): Logger {
   const prefix = (level: LogLevel): string => {
     const tag = level.toUpperCase().padEnd(5);
-    return `${formatTime()} ${tag} [${namespace}]`;
+    return `${formatClockTime()} ${tag} [${namespace}]`;
   };
 
   const emit = (level: LogLevel, msg: string, args: unknown[]): void => {
     if (LEVEL_WEIGHT[level] < LEVEL_WEIGHT[currentLevel]) return;
     const line = `${prefix(level)} ${msg}`;
-    if (args.length > 0) {
-      const tail = args.map(formatArg).join(" ");
-      if (level === "error" || level === "warn") {
-        console.error(`${line} ${tail}`);
-      } else {
-        console.log(`${line} ${tail}`);
-      }
-    } else if (level === "error" || level === "warn") {
-      console.error(line);
+    const text =
+      args.length > 0 ? `${line} ${args.map(formatArg).join(" ")}` : line;
+    if (level === "error" || level === "warn") {
+      console.error(text);
     } else {
-      console.log(line);
+      console.log(text);
     }
   };
 

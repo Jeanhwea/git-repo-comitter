@@ -1,13 +1,16 @@
+/**
+ * 应用层 —— CLI 入口。
+ *
+ * 负责命令注册、全局选项、日志级别与统一错误出口；业务流程委托给 commands/*。
+ */
 import { Command } from "commander";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";
-import { setLogLevel } from "@/utils/logger";
-import type { LogLevel } from "@/utils/logger";
-
-import { CliError } from "./errors";
+import { CliError } from "@/shared/errors";
+import { type LogLevel, setLogLevel } from "@/shared/logger";
 
 export function getVersion(): string {
   const pkgPath = resolve(__dirname, "..", "package.json");
@@ -36,16 +39,24 @@ program
   .option("--debug", "同 --verbose，输出 debug 级别日志")
   .option("--trace", "输出最详细的追踪日志（trace 级别）");
 
-function applyLogLevel(options: {
+interface CliOptions {
+  stagedOnly?: boolean;
   verbose?: boolean;
   debug?: boolean;
   trace?: boolean;
-}): void {
+}
+
+function applyLogLevel(options: CliOptions): void {
   let level: LogLevel = "info";
   if (options.trace) level = "trace";
   else if (options.debug || options.verbose) level = "debug";
   setLogLevel(level);
 }
+
+// 所有子命令共用：init 也能输出 debug/trace 日志。
+program.hook("preAction", (thisCommand) => {
+  applyLogLevel(thisCommand.opts() as CliOptions);
+});
 
 program
   .command("init")
@@ -54,8 +65,7 @@ program
     runInit().catch(handleCliError);
   });
 
-program.action((options) => {
-  applyLogLevel(options);
+program.action((options: CliOptions) => {
   runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
 });
 
