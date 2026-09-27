@@ -68,9 +68,7 @@ export function hasStagedChanges(): boolean {
 export function hasChangesToStage(): boolean {
   const output = execGit(["status", "--porcelain"], { tolerateError: true });
   if (!output.trim()) return false;
-  return output
-    .split("\n")
-    .some((line) => line.length >= 2 && line[1] !== " ");
+  return output.split("\n").some((line) => line.length >= 2 && line[1] !== " ");
 }
 
 interface StagedFileStat {
