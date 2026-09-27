@@ -314,6 +314,7 @@ feat(cli): 新增 --staged 参数等多项改动
 <output>
 1. 只输出合并后的提交信息本身，禁止添加任何解释、前缀、标题、批次编号或 Markdown 代码围栏。
 ${OUTPUT_COMMON_RULES}
+4. 所有草稿均为「chore: 无实质变更」时，必须输出 chore: 无实质变更，禁止输出代码块围栏或解释文字。
 </output>`;
 
 /**

@@ -71,6 +71,13 @@ function buildMergeMessages(
     totalTokens += partTokens;
   }
 
+  if (parts.length === 0) {
+    throw new Error(
+      `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
+      `请增大 maxInputTokens 或选择更大上下文的模型。`,
+    );
+  }
+
   const userContent =
     wrapDrafts(parts) +
     (omitted > 0 ? `\n\n${wrapOmissionNotice(omitted)}` : "");
@@ -115,12 +122,7 @@ export async function generateCommitMessageBatched(
 
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
   const messages = buildMergeMessages(partialMessages, config);
-  const initial = await chatCompletion(config, messages);
-  if (!initial) {
-    throw new Error("LLM 在合并提交信息时返回了空内容。");
-  }
   const message = await callWithValidation(config, messages, {
-    initialMessage: initial,
     label: "合并信息",
     validate: validateCommitMessage,
     repairHint: commitMessageRepairHint,
