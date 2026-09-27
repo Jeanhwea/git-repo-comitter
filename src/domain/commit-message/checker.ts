@@ -1,7 +1,7 @@
 /**
  * 领域层 —— 提交信息格式校验。
  *
- * 只保留校验规则：与 SYSTEM_PROMPT 的 rules / output 节一一对应，
+ * 只保留校验规则：与 COMMIT_SYSTEM_PROMPT 的 rules / output 节一一对应，
  * 避免规则写了却没人校验、坏结果直接流到 git commit。
  * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
  */
@@ -29,13 +29,14 @@ const MAX_LINE_LENGTH = 78;
 export function validateCommitMessage(
   message: string,
 ): ValidationOutcome<string> {
-  const firstBlank = message.indexOf("\n\n");
+  // 标题与正文以空行分隔；没有空行说明只有标题。
+  const bodyBreak = message.indexOf("\n\n");
   const header =
-    firstBlank === -1 ? message.trim() : message.slice(0, firstBlank).trim();
-  const body = firstBlank === -1 ? "" : message.slice(firstBlank + 2).trim();
+    bodyBreak === -1 ? message.trim() : message.slice(0, bodyBreak).trim();
+  const body = bodyBreak === -1 ? "" : message.slice(bodyBreak + 2).trim();
 
-  const match = header.match(HEADER_PATTERN);
-  if (!match) {
+  const matched = header.match(HEADER_PATTERN);
+  if (!matched) {
     return {
       valid: false,
       reason:
@@ -43,7 +44,7 @@ export function validateCommitMessage(
     };
   }
 
-  const type = match.groups?.type;
+  const type = matched.groups?.type;
   if (!type || !ALLOWED_TYPES.has(type)) {
     return {
       valid: false,

@@ -18,7 +18,7 @@ export interface ReviewResult {
  */
 const REASON_MAX_LENGTH = 80;
 
-export function reviewValidator(
+export function validateReviewResult(
   content: string,
 ): ValidationOutcome<ReviewResult> {
   let parsed: unknown;

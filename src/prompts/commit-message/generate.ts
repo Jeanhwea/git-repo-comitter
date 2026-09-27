@@ -1,4 +1,4 @@
-import { COMMIT_TYPES, TYPE_SELECTION } from "../blocks/commit-types";
+import { COMMIT_TYPES, TYPE_SELECTION_RULE } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
 import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
@@ -7,7 +7,7 @@ import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
 import { wrapDiff } from "./wrappers";
 
-export const SYSTEM_PROMPT = `${COMMIT_ROLE}
+export const COMMIT_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
 <context>
 你会收到一份来自暂存区的 Git diff（以 diff 标记包裹）。需要将其转换为一条可直接用于 git commit 的提交信息。
@@ -26,7 +26,7 @@ ${COMMIT_TYPES}
 <rules>
 ${COMMIT_FORMAT_RULES}
 
-6. ${TYPE_SELECTION}
+6. ${TYPE_SELECTION_RULE}
 7. description 禁止使用「修改了」「更新了」等无信息量的措辞。
 8. 破坏性变更必须在 type 或 scope 后添加 ! 标记，并在脚注中补充一行 BREAKING CHANGE: 影响说明。
 9. 正文必须与标题相隔一个空行。
@@ -96,6 +96,6 @@ ${OUTPUT_COMMON_RULES}
 /** 完整 diff 生成提交信息的提示词定义（含 user 消息构造）。 */
 export const commitMessagePrompt: PromptDefinition<string> = {
   id: "commit-message",
-  system: SYSTEM_PROMPT,
+  system: COMMIT_SYSTEM_PROMPT,
   buildUser: (data) => wrapDiff(data),
 };

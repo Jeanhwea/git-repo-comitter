@@ -9,7 +9,7 @@ import { execGit } from "./runner";
 export function isGitRepo(): boolean {
   return (
     execGit(["rev-parse", "--is-inside-work-tree"], {
-      tolerateError: true,
+      allowFailure: true,
     }).trim() === "true"
   );
 }

@@ -1,11 +1,11 @@
-import { COMMIT_TYPES, TYPE_PRIORITY_ORDER } from "../blocks/commit-types";
+import { COMMIT_TYPES, TYPE_PRIORITY_TEXT } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
 import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
 import { COMMIT_ROLE } from "../blocks/role";
 import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
-import { type MergeDraftsInput, wrapMergedDrafts } from "./wrappers";
+import { type MergeDraftsInput, wrapDraftsForMerge } from "./wrappers";
 
 export const MERGE_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
@@ -28,7 +28,7 @@ ${COMMIT_FORMAT_RULES}
 
 6. drafts、draft、notice 标记及其 index 序号只是批次包裹信息，必须忽略，禁止把序号、批次编号或标记文字写入输出。
 7. 必须输出一条形如 type[(scope)][!]: description 的标题行，type 必填且必须取自 commit_types。
-8. type 必须选择最能概括全部草稿的变更且只取唯一结果：全部草稿同类时取该类型；类型冲突时必须按 ${TYPE_PRIORITY_ORDER} 的次序取其一。
+8. type 必须选择最能概括全部草稿的变更且只取唯一结果：全部草稿同类时取该类型；类型冲突时必须按 ${TYPE_PRIORITY_TEXT} 的次序取其一。
 9. 任一草稿含破坏性变更时，必须保留 ! 标记与 BREAKING CHANGE: 脚注。
 10. scope 必须覆盖多数草稿涉及的模块；草稿之间 scope 冲突或跨模块过多时必须省略 scope。
 11. 标题行长度必须不超过 78 个字符；description 以动词开头，概括整体变更而非罗列细节，禁止以句号结尾；语言与标点遵守 language 节。
@@ -104,5 +104,6 @@ ${OUTPUT_COMMON_RULES}
 export const mergeCommitPrompt: PromptDefinition<MergeDraftsInput> = {
   id: "commit-message-merge",
   system: MERGE_SYSTEM_PROMPT,
-  buildUser: ({ parts, omitted }) => wrapMergedDrafts(parts, omitted),
+  buildUser: ({ drafts, omittedDrafts }) =>
+    wrapDraftsForMerge(drafts, omittedDrafts),
 };

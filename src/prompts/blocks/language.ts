@@ -1,7 +1,7 @@
 /**
  * 输出语言约束。
  *
- * 由提交信息生成（SYSTEM_PROMPT / PARTIAL_SYSTEM_PROMPT / MERGE_SYSTEM_PROMPT）
+ * 由提交信息生成（COMMIT_SYSTEM_PROMPT / PARTIAL_SYSTEM_PROMPT / MERGE_SYSTEM_PROMPT）
  * 与文件审查（REVIEW_SYSTEM_PROMPT）两类提示词共用，作为语言要求的唯一来源，
  * 避免同一条约束在多个提示词里各写一遍、改一处漏一处。
  *

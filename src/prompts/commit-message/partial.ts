@@ -1,4 +1,4 @@
-import { COMMIT_TYPES, TYPE_SELECTION } from "../blocks/commit-types";
+import { COMMIT_TYPES, TYPE_SELECTION_RULE } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
 import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
@@ -26,7 +26,7 @@ ${COMMIT_TYPES}
 <rules>
 ${COMMIT_FORMAT_RULES}
 
-6. ${TYPE_SELECTION}
+6. ${TYPE_SELECTION_RULE}
 7. 只描述当前这部分 diff 中实际出现的变更，禁止推测或补全省略部分的内容。
 8. 正文要点必须点出受影响的关键文件名或模块名（供后续合并时去重），以 "- " 开头并独占一行，每行不超过 78 个字符，要点数量不超过 5 条。
 9. 禁止出现「其余变更」「完整改动见其他部分」「以上为全部变更」等指向整体的表述，禁止写入批次编号或分隔标记。

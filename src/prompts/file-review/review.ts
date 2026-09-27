@@ -1,11 +1,8 @@
 import { LANGUAGE_RULES } from "../blocks/language";
 import { REVIEW_ROLE } from "../blocks/role";
 import type { PromptDefinition } from "../types";
-import {
-  type NewFileContent,
-  reviewRepairHint,
-  wrapNewFiles,
-} from "./wrappers";
+import { reviewRepairHint } from "./repair";
+import { type NewFileContent, wrapNewFiles } from "./wrappers";
 
 export const REVIEW_SYSTEM_PROMPT = `${REVIEW_ROLE}
 

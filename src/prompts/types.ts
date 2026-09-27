@@ -1,6 +1,6 @@
 import type OpenAI from "openai";
 
-export type ChatMsg = OpenAI.ChatCompletionMessageParam;
+export type ChatMessage = OpenAI.ChatCompletionMessageParam;
 
 /**
  * 一条提示词的完整定义。
@@ -26,8 +26,8 @@ export interface PromptDefinition<TInput = void> {
 export function buildMessages<TInput>(
   p: PromptDefinition<TInput>,
   data: TInput,
-): ChatMsg[] {
-  const msgs: ChatMsg[] = [{ role: "system", content: p.system }];
+): ChatMessage[] {
+  const msgs: ChatMessage[] = [{ role: "system", content: p.system }];
   if (p.buildUser) {
     msgs.push({ role: "user", content: p.buildUser(data) });
   }

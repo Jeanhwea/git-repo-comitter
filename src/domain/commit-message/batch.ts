@@ -7,7 +7,7 @@
  */
 import type { AppConfig } from "@/config/types";
 import {
-  collapseLargeBlocks,
+  collapseOversizedBlocks,
   groupIntoBatches,
   parseDiffBlocks,
 } from "@/infra/git/diff";
@@ -37,13 +37,14 @@ export interface BatchResult {
   batchCount: number;
 }
 
-async function generatePartialMessage(
+/** 为其中一个批次生成草稿，后续由合并阶段汇总成一条提交信息。 */
+async function generateDraft(
   diffContent: string,
   config: AppConfig,
 ): Promise<string> {
   const messages = buildMessages(partialCommitPrompt, diffContent);
   log.trace(
-    `分批生成提交信息，输入约 ${estimateTokens(wrapPartialDiff(diffContent))} tokens`,
+    `生成批次草稿，输入约 ${estimateTokens(wrapPartialDiff(diffContent))} tokens`,
   );
   const t0 = performance.now();
   const content = await chatCompletion(config, messages);
@@ -51,7 +52,7 @@ async function generatePartialMessage(
     throw new Error("LLM 在处理分批 diff 时返回了空内容。");
   }
   log.trace(
-    `分批生成完成，输出 ${content.length} 字符（耗时 ${formatElapsed(performance.now() - t0)}）`,
+    `批次草稿生成完成，输出 ${content.length} 字符（耗时 ${formatElapsed(performance.now() - t0)}）`,
   );
   return content;
 }
@@ -70,7 +71,7 @@ export async function generateCommitMessageBatched(
     return { message, batchCount: 1 };
   }
 
-  const blocks = collapseLargeBlocks(parseDiffBlocks(diff), limit);
+  const blocks = collapseOversizedBlocks(parseDiffBlocks(diff), limit);
   const collapsedDiff = blocks.map((b) => b.content).join("\n");
   const collapsedTokens = estimateTokens(collapsedDiff);
   if (collapsedTokens <= limit) {
@@ -86,16 +87,16 @@ export async function generateCommitMessageBatched(
     `  变更内容较大（约 ${diffTokens} tokens），将分为 ${batches.length} 批次处理...`,
   );
 
-  const partialMessages: string[] = [];
+  const drafts: string[] = [];
   for (let i = 0; i < batches.length; i++) {
     console.log(`  正在处理第 ${i + 1}/${batches.length} 批次...`);
-    const partial = await generatePartialMessage(batches[i].content, config);
-    partialMessages.push(partial);
+    const draft = await generateDraft(batches[i].content, config);
+    drafts.push(draft);
   }
 
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
   const { kept, omitted } = fitWithinBudget(
-    partialMessages.map((draft, i) => wrapDraft(i + 1, draft)),
+    drafts.map((draft, i) => wrapDraft(i + 1, draft)),
     effectiveLimit(config, mergeCommitPrompt.system),
   );
 
@@ -106,7 +107,10 @@ export async function generateCommitMessageBatched(
     );
   }
 
-  const messages = buildMessages(mergeCommitPrompt, { parts: kept, omitted });
+  const messages = buildMessages(mergeCommitPrompt, {
+    drafts: kept,
+    omittedDrafts: omitted,
+  });
   const message = await callWithValidation(config, messages, {
     label: "合并信息",
     validate: validateCommitMessage,

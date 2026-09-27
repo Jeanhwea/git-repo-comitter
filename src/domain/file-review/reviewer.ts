@@ -9,7 +9,7 @@ import { callWithValidation } from "@/infra/llm/retry";
 import { type NewFileContent, buildMessages, reviewPrompt } from "@/prompts";
 import { createLogger } from "@/shared/logger";
 
-import { type ReviewResult, reviewValidator } from "./checker";
+import { type ReviewResult, validateReviewResult } from "./checker";
 
 export type { ReviewResult };
 
@@ -25,7 +25,7 @@ export async function reviewNewFiles(
   const result = await callWithValidation<ReviewResult>(config, messages, {
     label: "审查结果",
     temperatureOverride: 0,
-    validate: reviewValidator,
+    validate: validateReviewResult,
     repairHint: reviewPrompt.repairHint,
   });
   log.trace("审查结论", {

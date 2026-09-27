@@ -19,12 +19,13 @@ export function effectiveLimit(
   config: AppConfig,
   systemPrompt: string,
 ): number {
-  const raw =
+  // 上下文容量扣掉系统提示词、结构性开销与预留给输出的额度。
+  const grossBudget =
     config.llm.maxInputTokens -
     estimateTokens(systemPrompt) -
     FRAMING_OVERHEAD -
     config.llm.maxOutputTokens;
-  return Math.floor(raw * (1 - SAFETY_MARGIN_RATIO));
+  return Math.floor(grossBudget * (1 - SAFETY_MARGIN_RATIO));
 }
 
 /**
