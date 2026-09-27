@@ -1,5 +1,10 @@
 import { estimateTokens } from "@/infra/llm/tokens";
 
+/**
+ * 文件 diff 模块 —— 分块层。
+ * 从 domain/commit-message/split.ts 迁入：按文件把 diff 切成块、对超大块折叠、再按 token 上限分组。
+ */
+
 export interface DiffBlock {
   filePath: string;
   content: string;

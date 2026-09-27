@@ -17,12 +17,12 @@ import {
   wrapDrafts,
   wrapOmissionNotice,
   wrapPartialDiff,
-} from "./prompts";
+} from "@/prompts";
 import {
   collapseLargeBlocks,
   groupIntoBatches,
   parseDiffBlocks,
-} from "./split";
+} from "@/infra/git/diff";
 
 const log = createLogger("batch");
 

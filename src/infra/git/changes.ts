@@ -1,5 +1,33 @@
 import { execGit } from "./runner";
 
+/**
+ * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
+ * 把原先堆在 diff.ts 里的变更采集逻辑迁至此，并以 ChangeSet 作为一等模型。
+ */
+
+export type ChangeStatus =
+  | "added"
+  | "modified"
+  | "deleted"
+  | "renamed"
+  | "copied";
+
+export interface FileChange {
+  path: string;
+  status: ChangeStatus;
+  isBinary: boolean;
+  additions: number;
+  deletions: number;
+}
+
+export interface ChangeSet {
+  files: FileChange[];
+  newFiles: FileChange[]; // status === "added"
+  binaryFiles: FileChange[]; // isBinary === true
+  hasStagedChanges: boolean;
+  hasChangesToStage: boolean; // 是否有需 git add 的未暂存变更
+}
+
 type NewFileScope = "staged" | "unstaged";
 
 function listNewFiles(scope: NewFileScope): string[] {
@@ -35,11 +63,7 @@ export function getNewFileContents(
         ...getUnstagedNewFiles().filter((f) => !stagedNewFiles.includes(f)),
       ];
 
-  const binarySet = new Set(
-    getStagedFileStats()
-      .filter((s) => s.isBinary)
-      .map((s) => s.path),
-  );
+  const binarySet = new Set(getStagedFileStats().filter((s) => s.isBinary).map((s) => s.path));
 
   return newFiles.map((filePath) => {
     if (binarySet.has(filePath)) {
@@ -74,6 +98,8 @@ export function hasChangesToStage(): boolean {
 interface StagedFileStat {
   path: string;
   isBinary: boolean;
+  additions: number;
+  deletions: number;
 }
 
 function getStagedFileStats(): StagedFileStat[] {
@@ -85,8 +111,6 @@ function getStagedFileStats(): StagedFileStat[] {
   // With -z, --numstat uses NUL-separated entries:
   //   Normal:  "added\tdeleted\tpath"
   //   Rename:  "added\tdeleted\t" + NUL + oldpath + NUL + newpath
-  // The rename format leaves the path field empty (just a trailing tab),
-  // so a simple per-entry regex misses renames entirely.
   const stats: StagedFileStat[] = [];
   const parts = output.split("\0");
   let i = 0;
@@ -105,6 +129,8 @@ function getStagedFileStats(): StagedFileStat[] {
         stats.push({
           path: newPath,
           isBinary: renameMatch[1] === "-" || renameMatch[2] === "-",
+          additions: renameMatch[1] === "-" ? 0 : Number(renameMatch[1]),
+          deletions: renameMatch[2] === "-" ? 0 : Number(renameMatch[2]),
         });
       }
       i += 3;
@@ -116,6 +142,8 @@ function getStagedFileStats(): StagedFileStat[] {
       stats.push({
         path: match[3],
         isBinary: match[1] === "-" || match[2] === "-",
+        additions: match[1] === "-" ? 0 : Number(match[1]),
+        deletions: match[2] === "-" ? 0 : Number(match[2]),
       });
     }
     i++;
@@ -123,34 +151,25 @@ function getStagedFileStats(): StagedFileStat[] {
   return stats;
 }
 
-export function getStagedDiff(): string {
+/**
+ * 采集当前暂存区的完整变更集。供审查门禁、提交流程等以结构化方式消费，
+ * 也可直接调用 getNewFileContents / hasStagedChanges 等兼容原接口的函数。
+ */
+export function getStagedChangeSet(): ChangeSet {
   const stats = getStagedFileStats();
-  if (stats.length === 0) return "";
-
-  const textFiles = stats.filter((s) => !s.isBinary);
-  const binaryFiles = stats.filter((s) => s.isBinary);
-
-  let diff = "";
-  if (textFiles.length > 0) {
-    const args = ["diff", "--cached"];
-    if (binaryFiles.length > 0) {
-      args.push("--", ":(top)");
-      for (const file of binaryFiles) {
-        args.push(`:(exclude,top)${file.path}`);
-      }
-    }
-    diff = execGit(args, { tolerateError: true });
-    if (!diff.trim() && binaryFiles.length > 0) {
-      diff = execGit(["diff", "--cached"], {
-        tolerateError: true,
-      });
-    }
-  }
-
-  if (binaryFiles.length > 0) {
-    const binaryList = binaryFiles.map((s) => `  - ${s.path}`).join("\n");
-    diff += `${diff ? "\n\n" : ""}=== 二进制文件变更（仅显示文件名）===\n${binaryList}\n`;
-  }
-
-  return diff;
+  const addedPaths = new Set(getStagedNewFiles());
+  const files: FileChange[] = stats.map((s) => ({
+    path: s.path,
+    status: addedPaths.has(s.path) ? "added" : "modified",
+    isBinary: s.isBinary,
+    additions: s.additions,
+    deletions: s.deletions,
+  }));
+  return {
+    files,
+    newFiles: files.filter((f) => f.status === "added"),
+    binaryFiles: files.filter((f) => f.isBinary),
+    hasStagedChanges: files.length > 0,
+    hasChangesToStage: hasChangesToStage(),
+  };
 }

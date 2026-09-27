@@ -1,14 +1,7 @@
-import type OpenAI from "openai";
-
 import type { AppConfig } from "@/infra/config/types";
 import { type ValidationOutcome, callWithValidation } from "@/infra/llm/retry";
 import { createLogger } from "@/utils/logger";
-
-import {
-  REVIEW_SYSTEM_PROMPT,
-  reviewRepairHint,
-  wrapNewFiles,
-} from "./prompts";
+import { buildMessages, reviewPrompt } from "@/prompts";
 
 const log = createLogger("review");
 
@@ -77,17 +70,14 @@ export async function reviewNewFiles(
   newFileContents: { path: string; content: string }[],
   config: AppConfig,
 ): Promise<ReviewResult> {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: REVIEW_SYSTEM_PROMPT },
-    { role: "user", content: wrapNewFiles(newFileContents) },
-  ];
+  const messages = buildMessages(reviewPrompt, newFileContents);
 
   log.debug(`开始审查 ${newFileContents.length} 个新增文件`);
   const result = await callWithValidation<ReviewResult>(config, messages, {
     label: "审查结果",
     temperatureOverride: 0,
     validate: reviewValidator,
-    repairHint: reviewRepairHint,
+    repairHint: reviewPrompt.repairHint,
   });
   log.trace("审查结论", {
     shouldCommit: result.shouldCommit,

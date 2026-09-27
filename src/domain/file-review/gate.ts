@@ -1,7 +1,7 @@
 import { CliError } from "@/app/cli/errors";
 import { question } from "@/app/cli/input";
 import type { AppConfig } from "@/infra/config/types";
-import { getNewFileContents } from "@/infra/git/diff";
+import { getNewFileContents } from "@/infra/git/changes";
 import { createLogger } from "@/utils/logger";
 
 import { reviewNewFiles } from "./reviewer";
