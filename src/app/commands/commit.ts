@@ -3,7 +3,7 @@ import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
 import { runReviewGate } from "@/domain/file-review/gate";
 import { loadConfig } from "@/infra/config/loader";
 import type { AppConfig } from "@/infra/config/types";
-import { getStagedDiff, hasStagedChanges } from "@/infra/git/diff";
+import { getStagedDiff, hasChangesToStage, hasStagedChanges } from "@/infra/git/diff";
 import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/runner";
 import { formatElapsed } from "@/utils/format-time";
 import { createLogger } from "@/utils/logger";
@@ -30,8 +30,10 @@ function stageOrProceed(stagedOnly: boolean): void {
     console.log("仅提交暂存变更...");
     return;
   }
-  console.log("暂存所有变更...");
-  gitAddAll();
+  if (hasChangesToStage()) {
+    console.log("暂存所有变更...");
+    gitAddAll();
+  }
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {

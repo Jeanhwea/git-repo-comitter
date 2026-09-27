@@ -61,6 +61,18 @@ export function hasStagedChanges(): boolean {
   return output.trim().length > 0;
 }
 
+/**
+ * 是否存在「需要 git add 暂存」的变更：未暂存的修改/删除，或未被跟踪的新文件。
+ * 已暂存（X 列非空、Y 列为空格）的变更不算在内，因为 git add . 对此是空操作。
+ */
+export function hasChangesToStage(): boolean {
+  const output = execGit(["status", "--porcelain"], { tolerateError: true });
+  if (!output.trim()) return false;
+  return output
+    .split("\n")
+    .some((line) => line.length >= 2 && line[1] !== " ");
+}
+
 interface StagedFileStat {
   path: string;
   isBinary: boolean;
