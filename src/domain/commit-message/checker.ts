@@ -5,6 +5,10 @@
  * 避免规则写了却没人校验、坏结果直接流到 git commit。
  * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
  */
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
 import type { ValidationOutcome } from "@/infra/llm/retry";
 
 const ALLOWED_TYPES = new Set([
@@ -23,8 +27,6 @@ const ALLOWED_TYPES = new Set([
 
 const HEADER_PATTERN =
   /^(?<type>[a-zA-Z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:\s*(?<description>.+)$/;
-
-const MAX_LINE_LENGTH = 78;
 
 export function validateCommitMessage(
   message: string,
@@ -52,20 +54,21 @@ export function validateCommitMessage(
     };
   }
 
-  if (header.length > MAX_LINE_LENGTH) {
+  if (header.length > MAX_HEADER_LENGTH) {
     return {
       valid: false,
-      reason: `标题行超过 ${MAX_LINE_LENGTH} 字符限制 (当前 ${header.length} 字符)`,
+      reason: `标题行超过 ${MAX_HEADER_LENGTH} 字符限制 (当前 ${header.length} 字符)，请压缩 description`,
     };
   }
 
+  // 正文（要点与脚注）行宽上限比标题宽松：需要容纳文件名等定位信息。
   const longLines = body
     .split("\n")
-    .filter((line) => line.length > MAX_LINE_LENGTH);
+    .filter((line) => line.length > MAX_BODY_LINE_LENGTH);
   if (longLines.length > 0) {
     return {
       valid: false,
-      reason: `正文行超出 ${MAX_LINE_LENGTH} 字符限制: ${longLines.join(", ")}`,
+      reason: `正文行超出 ${MAX_BODY_LINE_LENGTH} 字符限制 (最长 ${Math.max(...longLines.map((line) => line.length))} 字符): ${longLines.slice(0, 3).join(", ")}`,
     };
   }
 

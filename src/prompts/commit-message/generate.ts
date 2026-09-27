@@ -4,6 +4,10 @@ import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
 import { COMMIT_ROLE } from "../blocks/role";
 import { COMMIT_SAFETY } from "../blocks/safety";
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
 import type { PromptDefinition } from "../types";
 import { wrapDiff } from "./wrappers";
 
@@ -30,7 +34,7 @@ ${COMMIT_FORMAT_RULES}
 7. description 禁止使用「修改了」「更新了」等无信息量的措辞。
 8. 破坏性变更必须在 type 或 scope 后添加 ! 标记，并在脚注中补充一行 BREAKING CHANGE: 影响说明。
 9. 正文必须与标题相隔一个空行。
-10. 正文要点必须以半角连字符加空格 "- " 开头并独占一行，每行不超过 78 个字符，要点数量不超过 5 条。
+10. 正文要点必须以半角连字符加空格 "- " 开头并独占一行，要点数量不超过 5 条；每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文行宽上限比标题行的 ${MAX_HEADER_LENGTH} 宽松，可容纳文件名等定位信息，但仍禁止写成不换行的长段落）。
 11. 标题已完整表达变更时必须省略正文，禁止为凑篇幅复述 diff。
 12. 脚注必须使用 git trailer 格式（Token: value 或 Token #value），例如 Refs:、Reviewed-by:、BREAKING CHANGE:；多个脚注逐行排列。
 13. 输出必须是纯文本，禁止使用 emoji、Markdown 标题与加粗标记、代码块围栏。

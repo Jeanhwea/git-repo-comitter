@@ -4,6 +4,10 @@ import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
 import { COMMIT_ROLE } from "../blocks/role";
 import { COMMIT_SAFETY } from "../blocks/safety";
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
 import type { PromptDefinition } from "../types";
 import { type MergeDraftsInput, wrapDraftsForMerge } from "./wrappers";
 
@@ -31,10 +35,10 @@ ${COMMIT_FORMAT_RULES}
 8. type 必须选择最能概括全部草稿的变更且只取唯一结果：全部草稿同类时取该类型；类型冲突时必须按 ${TYPE_PRIORITY_TEXT} 的次序取其一。
 9. 任一草稿含破坏性变更时，必须保留 ! 标记与 BREAKING CHANGE: 脚注。
 10. scope 必须覆盖多数草稿涉及的模块；草稿之间 scope 冲突或跨模块过多时必须省略 scope。
-11. 标题行长度必须不超过 78 个字符；description 以动词开头，概括整体变更而非罗列细节，禁止以句号结尾；语言与标点遵守 language 节。
+11. 标题行长度必须不超过 ${MAX_HEADER_LENGTH} 个字符（比正文更严格）；description 以动词开头，概括整体变更而非罗列细节，禁止以句号结尾；语言与标点遵守 language 节。
 12. 必须合并所有草稿的要点并去重：依据要点中的文件名判断，同一文件的多条描述必须合并为一条，禁止保留重复条目。
 13. 草稿对同一文件的描述冲突时，必须保留更具体、更贴近事实的那一条，禁止并列矛盾表述，禁止引入草稿之外的新信息。
-14. 正文要点必须按主题（模块或变更性质）分组，以 "- " 开头并独占一行，每行不超过 78 个字符，合并后要点数量不超过 5 条。
+14. 正文要点必须按主题（模块或变更性质）分组，以 "- " 开头并独占一行，合并后要点数量不超过 5 条；每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文行宽上限比标题行的 ${MAX_HEADER_LENGTH} 宽松）。
 15. 合并后若整体变更简单，必须省略正文，仅保留标题行。
 16. 草稿为 chore: 无实质变更 时必须直接丢弃，不得参与 type 判定，也不得写入正文。
 17. 输入中出现 notice 标记的批次省略说明时，必须在标题中体现「等」或「多处」等范围词，禁止声称已覆盖全部变更。
