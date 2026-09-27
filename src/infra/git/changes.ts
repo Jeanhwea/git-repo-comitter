@@ -52,11 +52,12 @@ export function getNewFileContents(
   onlyStaged: boolean = false,
 ): { path: string; content: string }[] {
   const stagedNewFiles = getStagedNewFiles();
+  const stagedSet = new Set(stagedNewFiles);
   const newFiles = onlyStaged
     ? stagedNewFiles
     : [
         ...stagedNewFiles,
-        ...getUnstagedNewFiles().filter((f) => !stagedNewFiles.includes(f)),
+        ...getUnstagedNewFiles().filter((f) => !stagedSet.has(f)),
       ];
 
   const binarySet = new Set(
@@ -79,10 +80,8 @@ export function getNewFileContents(
 }
 
 export function hasStagedChanges(): boolean {
-  const output = execGit(["diff", "--cached", "--name-only"], {
-    tolerateError: true,
-  });
-  return output.trim().length > 0;
+  // 与变更集同源（numstat），避免出现「是否有暂存变更」的两种判定口径。
+  return getStagedFileStats().length > 0;
 }
 
 /**
@@ -100,6 +99,16 @@ interface StagedFileStat {
   isBinary: boolean;
   additions: number;
   deletions: number;
+}
+
+/** numstat 中 "-" 表示二进制文件（无行统计）。 */
+function toStat(add: string, del: string, path: string): StagedFileStat {
+  return {
+    path,
+    isBinary: add === "-" || del === "-",
+    additions: add === "-" ? 0 : Number(add),
+    deletions: del === "-" ? 0 : Number(del),
+  };
 }
 
 function getStagedFileStats(): StagedFileStat[] {
@@ -126,12 +135,7 @@ function getStagedFileStats(): StagedFileStat[] {
     if (renameMatch) {
       const newPath = parts[i + 2];
       if (newPath) {
-        stats.push({
-          path: newPath,
-          isBinary: renameMatch[1] === "-" || renameMatch[2] === "-",
-          additions: renameMatch[1] === "-" ? 0 : Number(renameMatch[1]),
-          deletions: renameMatch[2] === "-" ? 0 : Number(renameMatch[2]),
-        });
+        stats.push(toStat(renameMatch[1], renameMatch[2], newPath));
       }
       i += 3;
       continue;
@@ -139,12 +143,7 @@ function getStagedFileStats(): StagedFileStat[] {
     // Normal entry: all three fields in one NUL-separated chunk.
     const match = part.match(/^(\d+|-)\t(\d+|-)\t(.+)$/s);
     if (match) {
-      stats.push({
-        path: match[3],
-        isBinary: match[1] === "-" || match[2] === "-",
-        additions: match[1] === "-" ? 0 : Number(match[1]),
-        deletions: match[2] === "-" ? 0 : Number(match[2]),
-      });
+      stats.push(toStat(match[1], match[2], match[3]));
     }
     i++;
   }

@@ -18,17 +18,15 @@ const log = createLogger("llm");
 
 export const MAX_RETRIES = 3;
 
-export interface ValidationOutcome<T> {
-  valid: boolean;
-  value?: T;
-  reason?: string;
-}
+/** 校验结论：成功时携带值，失败时携带原因（可辨识联合，免除类型断言）。 */
+export type ValidationOutcome<T> =
+  | { valid: true; value: T }
+  | { valid: false; reason?: string };
 
 export interface ValidatedCallOptions<T> {
   validate: (content: string) => ValidationOutcome<T>;
   label?: string;
   retries?: number;
-  initialMessage?: string;
   temperatureOverride?: number;
   repairHint?: (reason: string) => string;
 }
@@ -42,7 +40,10 @@ export async function callWithValidation<T>(
   const maxAttempts = options.retries ?? MAX_RETRIES;
   const repairHint =
     options.repairHint ?? ((reason) => defaultRepairHint(label, reason));
-  let lastMessage: string | null = options.initialMessage ?? null;
+
+  // 复制一份再追加历史，避免改写调用方传入的消息数组。
+  const history: OpenAI.ChatCompletionMessageParam[] = [...messages];
+  let lastMessage: string | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (lastMessage === null) {
@@ -50,7 +51,7 @@ export async function callWithValidation<T>(
       const t0 = performance.now();
       lastMessage = await chatCompletion(
         config,
-        messages,
+        history,
         options.temperatureOverride,
       );
       log.trace(`LLM 调用返回，耗时 ${formatElapsed(performance.now() - t0)}`);
@@ -59,29 +60,27 @@ export async function callWithValidation<T>(
       }
     }
 
-    messages.push({ role: "assistant", content: lastMessage });
+    history.push({ role: "assistant", content: lastMessage });
 
     const outcome = options.validate(lastMessage);
-    if (outcome.valid) return outcome.value as T;
+    if (outcome.valid) return outcome.value;
 
-    if (attempt < maxAttempts) {
-      log.debug(
-        `${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`,
-      );
-      console.log(
-        `  ${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`,
-      );
-      console.log("  正在重新生成...\n");
-      messages.push({
-        role: "user",
-        content: repairHint(outcome.reason ?? ""),
-      });
-      lastMessage = null;
-    } else {
+    if (attempt === maxAttempts) {
       throw new Error(
         `${label}格式校验失败（已重试 ${maxAttempts} 次）: ${outcome.reason}\n最后一次生成的${label}：\n${lastMessage}`,
       );
     }
+
+    log.debug(`${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`);
+    console.log(
+      `  ${label}格式校验未通过（第 ${attempt} 次）: ${outcome.reason}`,
+    );
+    console.log("  正在重新生成...\n");
+    history.push({
+      role: "user",
+      content: repairHint(outcome.reason ?? ""),
+    });
+    lastMessage = null;
   }
 
   throw new Error("意外的错误：重试循环结束后仍未能生成有效结果");

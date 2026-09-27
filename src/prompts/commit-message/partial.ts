@@ -69,8 +69,8 @@ ${OUTPUT_COMMON_RULES}
 </output>`;
 
 /** 分批草稿生成的提示词定义（含 user 消息构造）。 */
-export const partialCommitPrompt: PromptDefinition = {
+export const partialCommitPrompt: PromptDefinition<string> = {
   id: "commit-message-partial",
   system: PARTIAL_SYSTEM_PROMPT,
-  buildUser: (data) => wrapPartialDiff(data as string),
+  buildUser: (data) => wrapPartialDiff(data),
 };

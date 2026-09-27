@@ -26,3 +26,22 @@ export function effectiveLimit(
     config.llm.maxOutputTokens;
   return Math.floor(raw * (1 - SAFETY_MARGIN_RATIO));
 }
+
+/**
+ * 按 token 预算从头挑选片段：返回可容纳的片段与被丢弃的数量。
+ * 顺序敏感（草稿按批次排列），一旦某片段放不下即停止，保证不出现中间空洞。
+ */
+export function fitWithinBudget(
+  parts: string[],
+  limit: number,
+): { kept: string[]; omitted: number } {
+  let total = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const cost = estimateTokens(parts[i]);
+    if (total + cost > limit) {
+      return { kept: parts.slice(0, i), omitted: parts.length - i };
+    }
+    total += cost;
+  }
+  return { kept: parts, omitted: 0 };
+}

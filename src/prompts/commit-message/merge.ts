@@ -101,11 +101,8 @@ ${OUTPUT_COMMON_RULES}
 </output>`;
 
 /** 分批草稿合并的提示词定义（含 user 消息构造）。 */
-export const mergeCommitPrompt: PromptDefinition = {
+export const mergeCommitPrompt: PromptDefinition<MergeDraftsInput> = {
   id: "commit-message-merge",
   system: MERGE_SYSTEM_PROMPT,
-  buildUser: (data) => {
-    const { parts, omitted } = data as MergeDraftsInput;
-    return wrapMergedDrafts(parts, omitted);
-  },
+  buildUser: ({ parts, omitted }) => wrapMergedDrafts(parts, omitted),
 };

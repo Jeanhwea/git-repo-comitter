@@ -31,11 +31,7 @@ let currentLevel: LogLevel = normalizeLevel(process.env.GRC_LOG_LEVEL);
 
 /** 运行时调整日志级别（CLI 选项在解析后调用）。 */
 export function setLogLevel(level: LogLevel): void {
-  currentLevel = normalizeLevel(level);
-}
-
-export function getLogLevel(): LogLevel {
-  return currentLevel;
+  currentLevel = level;
 }
 
 function formatArg(arg: unknown): string {
@@ -68,17 +64,12 @@ export function createLogger(namespace: string): Logger {
   const emit = (level: LogLevel, msg: string, args: unknown[]): void => {
     if (LEVEL_WEIGHT[level] < LEVEL_WEIGHT[currentLevel]) return;
     const line = `${prefix(level)} ${msg}`;
-    if (args.length > 0) {
-      const tail = args.map(formatArg).join(" ");
-      if (level === "error" || level === "warn") {
-        console.error(`${line} ${tail}`);
-      } else {
-        console.log(`${line} ${tail}`);
-      }
-    } else if (level === "error" || level === "warn") {
-      console.error(line);
+    const text =
+      args.length > 0 ? `${line} ${args.map(formatArg).join(" ")}` : line;
+    if (level === "error" || level === "warn") {
+      console.error(text);
     } else {
-      console.log(line);
+      console.log(text);
     }
   };
 

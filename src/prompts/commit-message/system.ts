@@ -94,8 +94,8 @@ ${OUTPUT_COMMON_RULES}
 </output>`;
 
 /** 完整 diff 生成提交信息的提示词定义（含 user 消息构造）。 */
-export const commitMessagePrompt: PromptDefinition = {
+export const commitMessagePrompt: PromptDefinition<string> = {
   id: "commit-message",
   system: SYSTEM_PROMPT,
-  buildUser: (data) => wrapDiff(data as string),
+  buildUser: (data) => wrapDiff(data),
 };

@@ -6,7 +6,11 @@
  */
 import type { AppConfig } from "@/config/types";
 import { callWithValidation } from "@/infra/llm/retry";
-import { buildMessages, reviewPrompt } from "@/prompts";
+import {
+  type NewFileContent,
+  buildMessages,
+  reviewPrompt,
+} from "@/prompts";
 import { createLogger } from "@/shared/logger";
 
 import { type ReviewResult, reviewValidator } from "./checker";
@@ -16,7 +20,7 @@ export type { ReviewResult };
 const log = createLogger("review");
 
 export async function reviewNewFiles(
-  newFileContents: { path: string; content: string }[],
+  newFileContents: NewFileContent[],
   config: AppConfig,
 ): Promise<ReviewResult> {
   const messages = buildMessages(reviewPrompt, newFileContents);

@@ -1,7 +1,7 @@
 import { LANGUAGE_RULES } from "../blocks/language";
 import { REVIEW_ROLE } from "../blocks/role";
 import type { PromptDefinition } from "../types";
-import { reviewRepairHint, wrapNewFiles } from "./wrappers";
+import { reviewRepairHint, wrapNewFiles, type NewFileContent } from "./wrappers";
 
 export const REVIEW_SYSTEM_PROMPT = `${REVIEW_ROLE}
 
@@ -81,10 +81,9 @@ ${LANGUAGE_RULES}
 </output>`;
 
 /** 提交前文件审查的提示词定义（含 user 消息构造与重试修复提示）。 */
-export const reviewPrompt: PromptDefinition = {
+export const reviewPrompt: PromptDefinition<NewFileContent[]> = {
   id: "file-review",
   system: REVIEW_SYSTEM_PROMPT,
-  buildUser: (data) =>
-    wrapNewFiles(data as { path: string; content: string }[]),
+  buildUser: (data) => wrapNewFiles(data),
   repairHint: reviewRepairHint,
 };

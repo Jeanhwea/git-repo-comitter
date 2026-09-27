@@ -1,6 +1,7 @@
 # grc (the Git Repository Committer)
 
 [![npm version](https://img.shields.io/npm/v/git-repo-comitter)](https://www.npmjs.com/package/git-repo-comitter)
+[![CI](https://github.com/Jeanhwea/git-repo-comitter/actions/workflows/ci.yml/badge.svg)](https://github.com/Jeanhwea/git-repo-comitter/actions/workflows/ci.yml)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue)](https://unlicense.org)
 
 基于大语言模型的 Git 提交信息生成工具。自动读取 Git 差异，调用 OpenAI 兼容 API 生成 [Conventional Commits](https://www.conventionalcommits.org/) 格式的提交信息并执行提交。
@@ -53,6 +54,15 @@ npm i -g .
 
 ```bash
 pnpm build && node dist/index.cjs
+```
+
+代码校验（PR 时由 GitHub Actions 自动执行）：
+
+```bash
+pnpm lint          # ESLint 检查
+pnpm format:check  # Prettier 格式检查
+pnpm format        # Prettier 自动格式化
+pnpm check         # TypeScript 类型检查
 ```
 
 ## 使用
