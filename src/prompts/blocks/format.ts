@@ -4,7 +4,10 @@
  *
  * 行宽上限取自 shared/commit-limits，与校验器共用同一组数字，避免提示词与校验口径不一致。
  */
-import { MAX_HEADER_LENGTH, MAX_BODY_LINE_LENGTH } from "@/shared/commit-limits";
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
 
 export const COMMIT_FORMAT_RULES = `1. 标题行必须形如 type[(scope)][!]: description，type 必填且必须取自 commit_types，scope 与 ! 可选。
 2. type 与 description 之间必须使用半角冒号后接一个半角空格分隔，禁止使用全角冒号。

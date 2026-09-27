@@ -1,13 +1,14 @@
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
+
 import { COMMIT_TYPES, TYPE_PRIORITY_TEXT } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
 import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
 import { COMMIT_ROLE } from "../blocks/role";
 import { COMMIT_SAFETY } from "../blocks/safety";
-import {
-  MAX_BODY_LINE_LENGTH,
-  MAX_HEADER_LENGTH,
-} from "@/shared/commit-limits";
 import type { PromptDefinition } from "../types";
 import { type MergeDraftsInput, wrapDraftsForMerge } from "./wrappers";
 
