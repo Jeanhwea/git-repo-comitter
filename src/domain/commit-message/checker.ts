@@ -58,7 +58,9 @@ export function validateCommitMessage(
     };
   }
 
-  const longLines = body.split("\n").filter((line) => line.length > MAX_LINE_LENGTH);
+  const longLines = body
+    .split("\n")
+    .filter((line) => line.length > MAX_LINE_LENGTH);
   if (longLines.length > 0) {
     return {
       valid: false,

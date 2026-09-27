@@ -13,7 +13,11 @@ import { question } from "@/shared/input";
  * 带默认值的提问：括号内展示当前值（或占位提示），直接回车即沿用默认值。
  * hint 与 fallback 分开，便于敏感字段（如 API Key）展示掩码而沿用真实值。
  */
-async function ask(label: string, hint: string, fallback: string): Promise<string> {
+async function ask(
+  label: string,
+  hint: string,
+  fallback: string,
+): Promise<string> {
   const answer = (await question(`${label} [${hint}]: `)).trim();
   return answer || fallback;
 }

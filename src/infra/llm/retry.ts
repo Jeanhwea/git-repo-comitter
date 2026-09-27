@@ -20,8 +20,7 @@ export const MAX_RETRIES = 3;
 
 /** 校验结论：成功时携带值，失败时携带原因（可辨识联合，免除类型断言）。 */
 export type ValidationOutcome<T> =
-  | { valid: true; value: T }
-  | { valid: false; reason?: string };
+  { valid: true; value: T } | { valid: false; reason?: string };
 
 export interface ValidatedCallOptions<T> {
   validate: (content: string) => ValidationOutcome<T>;

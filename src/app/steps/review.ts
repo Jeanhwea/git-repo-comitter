@@ -37,8 +37,9 @@ export async function runReviewGate(
   }
   console.log(`原因：${result.reason}`);
 
-  const answer = await question("是否继续提交？(y/N): ");
-  if (!["y", "yes"].includes(answer.toLowerCase())) {
+  const CONFIRM_ANSWERS = new Set(["y", "yes"]);
+  const answer = (await question("是否继续提交？(y/N): ")).trim().toLowerCase();
+  if (!CONFIRM_ANSWERS.has(answer)) {
     throw new CliError("用户取消提交。");
   }
 

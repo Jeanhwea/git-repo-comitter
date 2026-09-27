@@ -8,6 +8,7 @@
 import OpenAI from "openai";
 
 import type { AppConfig } from "@/config/types";
+import { CliError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
 import { formatElapsed } from "@/shared/time";
 
@@ -17,7 +18,7 @@ const log = createLogger("llm");
 
 export function createClient(config: AppConfig): OpenAI {
   if (!config.apiKey) {
-    throw new Error("apiKey 未设置，请运行 `grc init` 进行配置。");
+    throw new CliError("API Key 未设置，请运行 `grc init` 进行配置。");
   }
   return new OpenAI({
     apiKey: config.apiKey,

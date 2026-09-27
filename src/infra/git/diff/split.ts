@@ -24,6 +24,7 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
   let currentLines: string[] = [];
   let currentFile = "";
 
+  // 段头（如二进制清单）先缓存，等确定归属的块后再落盘。
   const flush = () => {
     if (currentLines.length === 0) return;
     const content = currentLines.join("\n");
@@ -35,6 +36,12 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
     currentLines = [];
   };
 
+  const flushHeader = () => {
+    if (!currentHeader) return;
+    currentLines.push(currentHeader);
+    currentHeader = "";
+  };
+
   for (const line of lines) {
     const diffMatch = line.match(/^diff --git a\/(.+?) b\//);
     const sectionMatch = line.match(/^=== .+ ===$/);
@@ -42,20 +49,17 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
     if (diffMatch) {
       flush();
       currentFile = diffMatch[1];
-      if (currentHeader) {
-        currentLines.push(currentHeader);
-        currentHeader = "";
-      }
+      flushHeader();
       currentLines.push(line);
-    } else if (sectionMatch) {
-      currentHeader = line;
-    } else {
-      if (currentHeader && currentLines.length === 0) {
-        currentLines.push(currentHeader);
-        currentHeader = "";
-      }
-      currentLines.push(line);
+      continue;
     }
+    if (sectionMatch) {
+      flushHeader();
+      currentHeader = line;
+      continue;
+    }
+    flushHeader();
+    currentLines.push(line);
   }
 
   flush();
@@ -100,14 +104,16 @@ export function groupIntoBatches(
   };
 
   for (const block of blocks) {
-    if (currentTokens + block.estimatedTokens <= maxTokens) {
-      currentBlocks.push(block);
-      currentTokens += block.estimatedTokens;
-    } else {
+    // 已有内容且放不下时才切批：保证不产出空批次，
+    // 单个块本身超限时独占一批（切无可切，交由上层折叠处理）。
+    if (
+      currentBlocks.length > 0 &&
+      currentTokens + block.estimatedTokens > maxTokens
+    ) {
       flushBatch();
-      currentBlocks.push(block);
-      currentTokens = block.estimatedTokens;
     }
+    currentBlocks.push(block);
+    currentTokens += block.estimatedTokens;
   }
 
   flushBatch();

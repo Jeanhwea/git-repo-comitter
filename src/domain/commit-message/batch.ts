@@ -11,7 +11,7 @@ import {
   groupIntoBatches,
   parseDiffBlocks,
 } from "@/infra/git/diff";
-import { effectiveLimit } from "@/infra/llm/budget";
+import { effectiveLimit, fitWithinBudget } from "@/infra/llm/budget";
 import { callWithValidation } from "@/infra/llm/retry";
 import { chatCompletion } from "@/infra/llm/transport/client";
 import {
@@ -56,32 +56,6 @@ async function generatePartialMessage(
   return content;
 }
 
-/**
- * 按 token 预算裁剪草稿：返回可容纳的草稿片段与被丢弃的批次数。
- * 裁剪属于预算相关的基础设施语义，故本层只做编排、不复写预算规则。
- */
-function fitDrafts(
-  drafts: string[],
-  limit: number,
-): { parts: string[]; omitted: number } {
-  const parts: string[] = [];
-  let totalTokens = 0;
-  let omitted = 0;
-
-  for (let i = 0; i < drafts.length; i++) {
-    const part = wrapDraft(i + 1, drafts[i]);
-    const partTokens = estimateTokens(part);
-    if (totalTokens + partTokens > limit) {
-      omitted = drafts.length - i;
-      break;
-    }
-    parts.push(part);
-    totalTokens += partTokens;
-  }
-
-  return { parts, omitted };
-}
-
 export async function generateCommitMessageBatched(
   diff: string,
   config: AppConfig,
@@ -98,10 +72,9 @@ export async function generateCommitMessageBatched(
 
   const blocks = collapseLargeBlocks(parseDiffBlocks(diff), limit);
   const collapsedDiff = blocks.map((b) => b.content).join("\n");
-  if (estimateTokens(collapsedDiff) <= limit) {
-    log.debug(
-      `合并大块后约 ${estimateTokens(collapsedDiff)} tokens，单批可容纳`,
-    );
+  const collapsedTokens = estimateTokens(collapsedDiff);
+  if (collapsedTokens <= limit) {
+    log.debug(`合并大块后约 ${collapsedTokens} tokens，单批可容纳`);
     const message = await generateCommitMessage(collapsedDiff, config);
     return { message, batchCount: 1 };
   }
@@ -121,19 +94,19 @@ export async function generateCommitMessageBatched(
   }
 
   console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
-  const { parts, omitted } = fitDrafts(
-    partialMessages,
+  const { kept, omitted } = fitWithinBudget(
+    partialMessages.map((draft, i) => wrapDraft(i + 1, draft)),
     effectiveLimit(config, mergeCommitPrompt.system),
   );
 
-  if (parts.length === 0) {
+  if (kept.length === 0) {
     throw new Error(
       `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
         `请增大 maxInputTokens 或选择更大上下文的模型。`,
     );
   }
 
-  const messages = buildMessages(mergeCommitPrompt, { parts, omitted });
+  const messages = buildMessages(mergeCommitPrompt, { parts: kept, omitted });
   const message = await callWithValidation(config, messages, {
     label: "合并信息",
     validate: validateCommitMessage,

@@ -16,3 +16,13 @@ export interface AppConfig {
   apiKey: string;
   endpoint: string;
 }
+
+/**
+ * 配置文件 ~/.grc/config.json 的形状：顶层字段均可缺省，llm 内部字段亦可缺省，
+ * 缺失部分在加载时由默认值补齐。
+ */
+export interface UserConfig {
+  apiKey?: string;
+  endpoint?: string;
+  llm?: Partial<LLMConfig>;
+}

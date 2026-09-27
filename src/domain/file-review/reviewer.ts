@@ -6,11 +6,7 @@
  */
 import type { AppConfig } from "@/config/types";
 import { callWithValidation } from "@/infra/llm/retry";
-import {
-  type NewFileContent,
-  buildMessages,
-  reviewPrompt,
-} from "@/prompts";
+import { type NewFileContent, buildMessages, reviewPrompt } from "@/prompts";
 import { createLogger } from "@/shared/logger";
 
 import { type ReviewResult, reviewValidator } from "./checker";

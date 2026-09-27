@@ -74,9 +74,14 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
   });
 
   await measure("暂存变更", () => stageOrProceed(!!options.stagedOnly));
-  await measure("文件审查门禁", () => runReviewGate(config, !!options.stagedOnly));
+  await measure("文件审查门禁", () =>
+    runReviewGate(config, !!options.stagedOnly),
+  );
 
-  const diff = await measure("提取暂存 diff", () => getStagedDiff().trim() || null);
+  const diff = await measure(
+    "提取暂存 diff",
+    () => getStagedDiff().trim() || null,
+  );
   if (!diff) {
     console.log("没有可提交的变更。");
     return;

@@ -2,7 +2,7 @@ import { getStagedChangeSet } from "../changes";
 import { buildStagedDiff } from "./process";
 
 export * from "./split";
-export { buildStagedDiff } from "./process";
+export { buildStagedDiff };
 
 /**
  * 取得可直接喂给 LLM 的暂存区 diff：

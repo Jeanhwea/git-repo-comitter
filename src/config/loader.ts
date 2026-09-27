@@ -10,7 +10,7 @@ import { resolve } from "path";
 
 import { question } from "@/shared/input";
 
-import { type AppConfig, type LLMConfig } from "./types";
+import { type AppConfig, type LLMConfig, type UserConfig } from "./types";
 
 const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
 
@@ -28,7 +28,7 @@ export const DEFAULT_CONFIG: AppConfig = {
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export function loadUserConfig(): Partial<AppConfig> {
+export function loadUserConfig(): UserConfig {
   if (!existsSync(USER_CONFIG_PATH)) return {};
   try {
     const parsed: unknown = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf-8"));
@@ -39,7 +39,7 @@ export function loadUserConfig(): Partial<AppConfig> {
       return {};
     }
     return {
-      ...(parsed as Partial<AppConfig>),
+      ...(parsed as UserConfig),
       llm: isPlainObject(parsed.llm)
         ? { ...(parsed.llm as Partial<LLMConfig>) }
         : undefined,
@@ -52,7 +52,7 @@ export function loadUserConfig(): Partial<AppConfig> {
   }
 }
 
-export function saveUserConfig(config: Partial<AppConfig>): void {
+export function saveUserConfig(config: UserConfig): void {
   const dir = resolve(homedir(), ".grc");
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
@@ -65,7 +65,9 @@ async function offerRepair(userValue: number, limit: number): Promise<void> {
   );
 
   const answer = (
-    await question(`  是否将配置文件的 maxOutputTokens 修复为 ${limit}？(Y/n): `)
+    await question(
+      `  是否将配置文件的 maxOutputTokens 修复为 ${limit}？(Y/n): `,
+    )
   )
     .trim()
     .toLowerCase();

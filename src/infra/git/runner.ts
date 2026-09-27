@@ -2,7 +2,7 @@
  * git 基础设施 —— 命令原语层。
  *
  * 只负责「如何调用 git 进程」：全局参数、工作目录、缓冲上限与错误容忍策略。
- * 具体仓库操作（isGitRepo / gitAddAll / gitCommit / gitReset）已拆到 repo.ts，
+ * 具体仓库操作（isGitRepo / gitAddAll / gitCommit）已拆到 repo.ts，
  * 使「调用机制」与「业务动作」各自单一职责（I06 的 P5）。
  */
 import { execFileSync } from "child_process";
