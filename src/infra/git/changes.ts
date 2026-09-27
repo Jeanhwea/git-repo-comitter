@@ -6,11 +6,7 @@ import { execGit } from "./runner";
  */
 
 export type ChangeStatus =
-  | "added"
-  | "modified"
-  | "deleted"
-  | "renamed"
-  | "copied";
+  "added" | "modified" | "deleted" | "renamed" | "copied";
 
 export interface FileChange {
   path: string;
@@ -63,7 +59,11 @@ export function getNewFileContents(
         ...getUnstagedNewFiles().filter((f) => !stagedNewFiles.includes(f)),
       ];
 
-  const binarySet = new Set(getStagedFileStats().filter((s) => s.isBinary).map((s) => s.path));
+  const binarySet = new Set(
+    getStagedFileStats()
+      .filter((s) => s.isBinary)
+      .map((s) => s.path),
+  );
 
   return newFiles.map((filePath) => {
     if (binarySet.has(filePath)) {

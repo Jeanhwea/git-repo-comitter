@@ -1,13 +1,16 @@
-import { CliError } from "@/app/cli/errors";
+/**
+ * 应用层 —— commit 命令：串联配置校验、暂存、审查门禁、生成提交信息与提交。
+ */
+import { runReviewGate } from "@/app/steps/review";
+import { loadConfig } from "@/config/loader";
+import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
-import { runReviewGate } from "@/domain/file-review/gate";
-import { loadConfig } from "@/infra/config/loader";
-import type { AppConfig } from "@/infra/config/types";
-import { getStagedDiff } from "@/infra/git/diff";
 import { hasChangesToStage, hasStagedChanges } from "@/infra/git/changes";
-import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/runner";
-import { formatElapsed } from "@/utils/format-time";
-import { createLogger } from "@/utils/logger";
+import { getStagedDiff } from "@/infra/git/diff";
+import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/repo";
+import { CliError } from "@/shared/errors";
+import { createLogger } from "@/shared/logger";
+import { formatElapsed } from "@/shared/time";
 
 const log = createLogger("commit");
 

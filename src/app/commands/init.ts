@@ -1,10 +1,13 @@
-import { CliError } from "@/app/cli/errors";
-import { question } from "@/app/cli/input";
+/**
+ * 应用层 —— init 命令：交互式写入 LLM 配置。
+ */
 import {
   DEFAULT_CONFIG,
   loadUserConfig,
   saveUserConfig,
-} from "@/infra/config/loader";
+} from "@/config/loader";
+import { CliError } from "@/shared/errors";
+import { question } from "@/shared/input";
 
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");

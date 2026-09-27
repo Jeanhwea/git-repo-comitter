@@ -1,7 +1,14 @@
+/**
+ * 配置层 —— 默认值、加载、校验收敛与持久化。
+ *
+ * 由 infra/config 迁出（I06 的 P3）；交互问答改用 shared/input 的 question()，
+ * 删除原先内联的 createInterface 实现（I06 的 P7）。
+ */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
-import { createInterface } from "readline/promises";
+
+import { question } from "@/shared/input";
 
 import { type AppConfig, type LLMConfig } from "./types";
 
@@ -54,18 +61,13 @@ async function clampLlmConfig(
       `\n⚠️  警告：配置中的 maxOutputTokens (${userLlm.maxOutputTokens}) 超过了当前模型的上限 (${DEFAULT_CONFIG.llm.maxOutputTokens})。`,
     );
 
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
     const answer = (
-      await rl.question(
+      await question(
         `  是否将配置文件的 maxOutputTokens 修复为 ${DEFAULT_CONFIG.llm.maxOutputTokens}？(Y/n): `,
       )
     )
       .trim()
       .toLowerCase();
-    rl.close();
 
     if (answer === "" || answer === "y" || answer === "yes") {
       const userConfig = loadUserConfig();

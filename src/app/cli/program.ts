@@ -1,13 +1,16 @@
+/**
+ * 应用层 —— CLI 入口。
+ *
+ * 负责命令注册、全局选项、日志级别与统一错误出口；业务流程委托给 commands/*。
+ */
 import { Command } from "commander";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";
-import { setLogLevel } from "@/utils/logger";
-import type { LogLevel } from "@/utils/logger";
-
-import { CliError } from "./errors";
+import { CliError } from "@/shared/errors";
+import { type LogLevel, setLogLevel } from "@/shared/logger";
 
 export function getVersion(): string {
   const pkgPath = resolve(__dirname, "..", "package.json");

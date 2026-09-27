@@ -19,10 +19,7 @@ export interface PromptDefinition {
  * 统一消息组装：消除 generator / batch / reviewer 里重复的
  * [{ role: "system" }, { role: "user" }] 样板。
  */
-export function buildMessages(
-  p: PromptDefinition,
-  data?: unknown,
-): ChatMsg[] {
+export function buildMessages(p: PromptDefinition, data?: unknown): ChatMsg[] {
   const msgs: ChatMsg[] = [{ role: "system", content: p.system }];
   if (p.buildUser) {
     msgs.push({ role: "user", content: p.buildUser(data) });

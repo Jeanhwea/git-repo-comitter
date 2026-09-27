@@ -1,10 +1,11 @@
+/**
+ * 领域层 —— 提交信息格式校验。
+ *
+ * 只保留校验规则：与 SYSTEM_PROMPT 的 rules / output 节一一对应，
+ * 避免规则写了却没人校验、坏结果直接流到 git commit。
+ * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
+ */
 import type { ValidationOutcome } from "@/infra/llm/retry";
-
-export const commitMessageRepairHint = (reason: string): string =>
-  `上一次输出未通过校验：${reason}。\n` +
-  `必须逐条对照系统提示词中的 rules 与 output 节重新生成提交信息：` +
-  `标题使用半角冒号加空格、type 取自 commit_types、标题与正文每行不超过 78 个字符。` +
-  `只输出提交信息本身，禁止添加任何解释或代码围栏。输出语言仍为简体中文，参照 language 节。`;
 
 const ALLOWED_TYPES = [
   "feat",

@@ -1,4 +1,4 @@
-import { estimateTokens } from "@/infra/llm/tokens";
+import { estimateTokens } from "@/shared/tokens";
 
 /**
  * 文件 diff 模块 —— 分块层。

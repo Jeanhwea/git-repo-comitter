@@ -1,11 +1,11 @@
-import { COMMIT_ROLE } from "../blocks/role";
-import { LANGUAGE_RULES } from "../blocks/language";
 import { COMMIT_TYPES, TYPE_SELECTION } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
-import { COMMIT_SAFETY } from "../blocks/safety";
+import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
-import { wrapPartialDiff } from "./wrappers";
+import { COMMIT_ROLE } from "../blocks/role";
+import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
+import { wrapPartialDiff } from "./wrappers";
 
 export const PARTIAL_SYSTEM_PROMPT = `${COMMIT_ROLE}
 

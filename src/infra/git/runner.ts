@@ -1,3 +1,10 @@
+/**
+ * git 基础设施 —— 命令原语层。
+ *
+ * 只负责「如何调用 git 进程」：全局参数、工作目录、缓冲上限与错误容忍策略。
+ * 具体仓库操作（isGitRepo / gitAddAll / gitCommit / gitReset）已拆到 repo.ts，
+ * 使「调用机制」与「业务动作」各自单一职责（I06 的 P5）。
+ */
 import { execFileSync } from "child_process";
 
 export interface GitExecOptions {
@@ -19,25 +26,4 @@ export function execGit(args: string[], options: GitExecOptions = {}): string {
     if (options.tolerateError) return "";
     throw err;
   }
-}
-
-export function isGitRepo(): boolean {
-  return (
-    execGit(["rev-parse", "--is-inside-work-tree"], {
-      tolerateError: true,
-    }).trim() === "true"
-  );
-}
-
-export function gitAddAll(): void {
-  execGit(["add", "."]);
-}
-
-export function gitCommit(message: string): void {
-  execGit(["commit", "-m", message]);
-}
-
-export function gitReset(files: string[]): void {
-  if (files.length === 0) return;
-  execGit(["reset", "--", ...files]);
 }

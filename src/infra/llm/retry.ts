@@ -1,8 +1,16 @@
+/**
+ * LLM 基础设施 —— 校验重试。
+ *
+ * 把「调用 → 校验 → 失败则附修复提示再试」的循环收敛在一处，供各业务域复用。
+ * 默认的修复提示文本原先内联在此处（I06 的 P4），现取自 prompts/repair.ts，
+ * 使面向模型的文本集中在提示词模块。
+ */
 import type OpenAI from "openai";
 
-import type { AppConfig } from "@/infra/config/types";
-import { formatElapsed } from "@/utils/format-time";
-import { createLogger } from "@/utils/logger";
+import type { AppConfig } from "@/config/types";
+import { defaultRepairHint } from "@/prompts/repair";
+import { createLogger } from "@/shared/logger";
+import { formatElapsed } from "@/shared/time";
 
 import { chatCompletion } from "./transport/client";
 
@@ -33,9 +41,7 @@ export async function callWithValidation<T>(
   const label = options.label ?? "结果";
   const maxAttempts = options.retries ?? MAX_RETRIES;
   const repairHint =
-    options.repairHint ??
-    ((reason) =>
-      `上一次输出的${label}未通过校验：${reason}。必须严格按照系统提示词的要求重新生成：只输出结果本身，禁止添加任何解释或代码围栏；输出语言必须与系统提示词的要求一致。`);
+    options.repairHint ?? ((reason) => defaultRepairHint(label, reason));
   let lastMessage: string | null = options.initialMessage ?? null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

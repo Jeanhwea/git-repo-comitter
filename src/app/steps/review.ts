@@ -1,10 +1,16 @@
-import { CliError } from "@/app/cli/errors";
-import { question } from "@/app/cli/input";
-import type { AppConfig } from "@/infra/config/types";
+/**
+ * 应用层 —— 审查门禁步骤。
+ *
+ * 由 domain/file-review/gate.ts 上移而来（I06 的 P1）：本步骤需要向用户提问并在被拒绝时
+ * 终止进程，属于用户交互与流程控制，不应放在领域层。领域层只保留 reviewNewFiles 的
+ * 纯审查能力，因此 domain → app 的回边被彻底消除。
+ */
+import type { AppConfig } from "@/config/types";
+import { reviewNewFiles } from "@/domain/file-review/reviewer";
 import { getNewFileContents } from "@/infra/git/changes";
-import { createLogger } from "@/utils/logger";
-
-import { reviewNewFiles } from "./reviewer";
+import { CliError } from "@/shared/errors";
+import { question } from "@/shared/input";
+import { createLogger } from "@/shared/logger";
 
 const log = createLogger("review");
 

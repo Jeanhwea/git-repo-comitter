@@ -1,8 +1,17 @@
-import type { AppConfig } from "@/infra/config/types";
+/**
+ * 领域层 —— 单批提交信息生成。
+ *
+ * 职责：取提示词、组装消息、交给 LLM 校验重试。消息组装由 prompts.buildMessages 统一完成。
+ */
+import type { AppConfig } from "@/config/types";
 import { callWithValidation } from "@/infra/llm/retry";
-import { buildMessages, commitMessagePrompt } from "@/prompts";
+import {
+  buildMessages,
+  commitMessagePrompt,
+  commitMessageRepairHint,
+} from "@/prompts";
 
-import { commitMessageRepairHint, validateCommitMessage } from "./checker";
+import { validateCommitMessage } from "./checker";
 
 export async function generateCommitMessage(
   diff: string,

@@ -1,9 +1,11 @@
-import { COMMIT_ROLE } from "../blocks/role";
-import { LANGUAGE_RULES } from "../blocks/language";
 import { COMMIT_TYPES, TYPE_PRIORITY_ORDER } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
-import { COMMIT_SAFETY } from "../blocks/safety";
+import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
+import { COMMIT_ROLE } from "../blocks/role";
+import { COMMIT_SAFETY } from "../blocks/safety";
+import type { PromptDefinition } from "../types";
+import { type MergeDraftsInput, wrapMergedDrafts } from "./wrappers";
 
 export const MERGE_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
@@ -97,3 +99,13 @@ feat(cli): 新增 --staged 参数等多项改动
 ${OUTPUT_COMMON_RULES}
 4. 所有草稿均为「chore: 无实质变更」时，必须输出 chore: 无实质变更，禁止输出代码块围栏或解释文字。
 </output>`;
+
+/** 分批草稿合并的提示词定义（含 user 消息构造）。 */
+export const mergeCommitPrompt: PromptDefinition = {
+  id: "commit-message-merge",
+  system: MERGE_SYSTEM_PROMPT,
+  buildUser: (data) => {
+    const { parts, omitted } = data as MergeDraftsInput;
+    return wrapMergedDrafts(parts, omitted);
+  },
+};

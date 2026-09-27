@@ -21,3 +21,17 @@ export const wrapDrafts = (drafts: string[]): string =>
 /** 合并时因长度限制被丢弃的批次提示。 */
 export const wrapOmissionNotice = (count: number): string =>
   `<notice>另有 ${count} 个批次的草稿因长度限制已省略</notice>`;
+
+/** 合并阶段的输入：已按 token 预算裁剪好的草稿片段，以及被丢弃的批次数。 */
+export interface MergeDraftsInput {
+  parts: string[];
+  omitted: number;
+}
+
+/**
+ * 包裹合并阶段的全部草稿。
+ * 裁剪（依据 token 预算决定保留几条）属于基础设施职责，由调用方完成；
+ * 这里只负责标记包裹，使提示词模块不必依赖 token 估算。
+ */
+export const wrapMergedDrafts = (parts: string[], omitted: number): string =>
+  wrapDrafts(parts) + (omitted > 0 ? `\n\n${wrapOmissionNotice(omitted)}` : "");

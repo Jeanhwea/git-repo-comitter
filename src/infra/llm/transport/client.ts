@@ -1,8 +1,15 @@
+/**
+ * LLM 基础设施 —— 传输层。
+ *
+ * 只做两件事：按配置构造客户端、发起一次聊天补全并抽取文本。
+ * 原先自带的 singleTurn 自行组装 system+user 消息，与 prompts.buildMessages
+ * 形成两套消息组装（I06 的 P5），已删除，统一由提示词模块组装后传入。
+ */
 import OpenAI from "openai";
 
-import type { AppConfig } from "@/infra/config/types";
-import { formatElapsed } from "@/utils/format-time";
-import { createLogger } from "@/utils/logger";
+import type { AppConfig } from "@/config/types";
+import { createLogger } from "@/shared/logger";
+import { formatElapsed } from "@/shared/time";
 
 import { extractContent } from "./response";
 
@@ -36,20 +43,4 @@ export async function chatCompletion(
   });
   log.trace(`LLM 返回耗时 ${formatElapsed(performance.now() - t0)}`);
   return extractContent(response);
-}
-
-export async function singleTurn(
-  config: AppConfig,
-  systemPrompt: string,
-  userContent: string,
-  temperatureOverride?: number,
-): Promise<string> {
-  return chatCompletion(
-    config,
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userContent },
-    ],
-    temperatureOverride,
-  );
 }
