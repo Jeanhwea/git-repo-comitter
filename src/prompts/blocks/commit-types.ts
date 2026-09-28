@@ -13,8 +13,11 @@ export const COMMIT_TYPES = `<commit_types>
 - revert: 回退提交（脚注中必须包含被回退的提交哈希）
 </commit_types>`;
 
-/** type 判定优先级（单一来源）：生成、分批、合并三阶段共用，保证选出一致的 type。 */
-export const TYPE_PRIORITY = [
+/**
+ * type 判定优先级（单一来源）：生成、分批、合并三阶段共用，保证选出一致的 type。
+ * 每项 = 判定释义 + 对应 type，按次序从前到后裁决。
+ */
+const TYPE_PRIORITY_LIST = [
   { type: "fix", hint: "修正既有缺陷" },
   { type: "feat", hint: "新增用户可见的功能、接口或命令" },
   { type: "refactor", hint: "仅调整代码结构而不改变外部行为" },
@@ -28,8 +31,10 @@ export const TYPE_PRIORITY = [
   { type: "chore", hint: "以上均不适用" },
 ] as const;
 
-/** 仅取 type 部分的次序文本，供合并阶段的类型冲突裁决引用。 */
-export const TYPE_PRIORITY_ORDER = TYPE_PRIORITY.map((t) => t.type).join(" → ");
+/** 仅取 type 部分的次序文本（如 "fix → feat → ..."），供合并阶段的类型冲突裁决引用。 */
+export const TYPE_PRIORITY_TEXT = TYPE_PRIORITY_LIST.map((t) => t.type).join(
+  " → ",
+);
 
-/** type 判定优先级（带释义）。 */
-export const TYPE_SELECTION = `type 必须按以下顺序判定且只取唯一结果，禁止堆叠多个 type：${TYPE_PRIORITY.map((t) => `${t.hint} → ${t.type}`).join("；")}。混合变更时必须按主要意图判定，次要变更在正文中补述。`;
+/** type 判定优先级的完整规则句（带释义），供生成与分批阶段引用。 */
+export const TYPE_SELECTION_RULE = `type 必须按以下顺序判定且只取唯一结果，禁止堆叠多个 type：${TYPE_PRIORITY_LIST.map((t) => `${t.hint} → ${t.type}`).join("；")}。混合变更时必须按主要意图判定，次要变更在正文中补述。`;

@@ -1,23 +1,29 @@
-export interface MessageContentPart {
+/**
+ * 聊天补全响应的最小结构描述。
+ *
+ * 刻意不复用 openai 包的类型：这里只关心「取首个 choice 的文本」这一件事，
+ * 且命名带上 Llm 前缀，避免与 openai 官方的 ChatCompletion* 类型混淆。
+ */
+
+interface LlmContentPart {
   type: string;
   text: string;
 }
 
-export interface ChatCompletionMessage {
-  content: string | MessageContentPart[] | null;
+interface LlmMessage {
+  content: string | LlmContentPart[] | null;
 }
 
-export interface ChatCompletionChoice {
-  message: ChatCompletionMessage;
+interface LlmChoice {
+  message: LlmMessage;
 }
 
-export interface ChatCompletionResponse {
-  choices: ChatCompletionChoice[];
+interface LlmChatResponse {
+  choices: LlmChoice[];
 }
 
-export function extractContent(
-  response: ChatCompletionResponse | string,
-): string {
+/** 取首个 choice 的文本；content 为多段时只拼接 text 段。 */
+export function extractContent(response: LlmChatResponse | string): string {
   const data = typeof response === "string" ? JSON.parse(response) : response;
   const content = data.choices?.[0]?.message?.content;
   if (typeof content === "string") return content.trim();

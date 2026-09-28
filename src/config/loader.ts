@@ -12,7 +12,9 @@ import { question } from "@/shared/input";
 
 import { type AppConfig, type LLMConfig, type UserConfig } from "./types";
 
-const USER_CONFIG_PATH = resolve(homedir(), ".grc", "config.json");
+/** 配置目录 ~/.grc，配置文件位于其下的 config.json。 */
+const CONFIG_DIR = resolve(homedir(), ".grc");
+const USER_CONFIG_PATH = resolve(CONFIG_DIR, "config.json");
 
 export const DEFAULT_CONFIG: AppConfig = {
   llm: {
@@ -53,8 +55,7 @@ export function loadUserConfig(): UserConfig {
 }
 
 export function saveUserConfig(config: UserConfig): void {
-  const dir = resolve(homedir(), ".grc");
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
   writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
 }
 
@@ -92,13 +93,13 @@ async function offerRepair(userValue: number, limit: number): Promise<void> {
 async function clampLlmConfig(
   userLlm: Partial<LLMConfig> | undefined,
 ): Promise<LLMConfig> {
-  const clamped = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
+  const effective = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
   const { maxInputTokens, maxOutputTokens } = DEFAULT_CONFIG.llm;
 
   const userOutput = userLlm?.maxOutputTokens;
   if (userOutput != null && userOutput > maxOutputTokens) {
     await offerRepair(userOutput, maxOutputTokens);
-    clamped.maxOutputTokens = maxOutputTokens;
+    effective.maxOutputTokens = maxOutputTokens;
   }
 
   const userInput = userLlm?.maxInputTokens;
@@ -106,10 +107,10 @@ async function clampLlmConfig(
     console.warn(
       `\n⚠️  警告：配置中的 maxInputTokens (${userInput}) 超过了当前模型的上限 (${maxInputTokens})，将自动取较小值 ${maxInputTokens}。`,
     );
-    clamped.maxInputTokens = maxInputTokens;
+    effective.maxInputTokens = maxInputTokens;
   }
 
-  return clamped;
+  return effective;
 }
 
 export async function loadConfig(): Promise<AppConfig> {

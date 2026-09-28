@@ -5,13 +5,13 @@ import { estimateTokens } from "@/shared/tokens";
  * 从 domain/commit-message/split.ts 迁入：按文件把 diff 切成块、对超大块折叠、再按 token 上限分组。
  */
 
-export interface DiffBlock {
+interface DiffBlock {
   filePath: string;
   content: string;
   estimatedTokens: number;
 }
 
-export interface DiffBatch {
+interface DiffBatch {
   blocks: DiffBlock[];
   content: string;
   estimatedTokens: number;
@@ -20,53 +20,57 @@ export interface DiffBatch {
 export function parseDiffBlocks(diff: string): DiffBlock[] {
   const lines = diff.split("\n");
   const blocks: DiffBlock[] = [];
-  let currentHeader = "";
-  let currentLines: string[] = [];
-  let currentFile = "";
-
   // 段头（如二进制清单）先缓存，等确定归属的块后再落盘。
+  let pendingHeader = "";
+  let blockLines: string[] = [];
+  let blockPath = "";
+
   const flush = () => {
-    if (currentLines.length === 0) return;
-    const content = currentLines.join("\n");
+    if (blockLines.length === 0) return;
+    const content = blockLines.join("\n");
     blocks.push({
-      filePath: currentFile,
+      filePath: blockPath,
       content,
       estimatedTokens: estimateTokens(content),
     });
-    currentLines = [];
+    blockLines = [];
   };
 
   const flushHeader = () => {
-    if (!currentHeader) return;
-    currentLines.push(currentHeader);
-    currentHeader = "";
+    if (!pendingHeader) return;
+    blockLines.push(pendingHeader);
+    pendingHeader = "";
   };
 
   for (const line of lines) {
-    const diffMatch = line.match(/^diff --git a\/(.+?) b\//);
-    const sectionMatch = line.match(/^=== .+ ===$/);
+    const fileHeader = line.match(/^diff --git a\/(.+?) b\//);
+    const sectionHeader = line.match(/^=== .+ ===$/);
 
-    if (diffMatch) {
+    if (fileHeader) {
       flush();
-      currentFile = diffMatch[1];
+      blockPath = fileHeader[1];
       flushHeader();
-      currentLines.push(line);
+      blockLines.push(line);
       continue;
     }
-    if (sectionMatch) {
+    if (sectionHeader) {
       flushHeader();
-      currentHeader = line;
+      pendingHeader = line;
       continue;
     }
     flushHeader();
-    currentLines.push(line);
+    blockLines.push(line);
   }
 
   flush();
   return blocks;
 }
 
-export function collapseLargeBlocks(
+/**
+ * 把超出 token 预算的块折叠成「只留文件名」的占位说明，
+ * 避免单个巨型文件把整份 diff 撑爆上下文。
+ */
+export function collapseOversizedBlocks(
   blocks: DiffBlock[],
   maxTokens: number,
 ): DiffBlock[] {

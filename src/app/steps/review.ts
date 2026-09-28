@@ -7,18 +7,21 @@
  */
 import type { AppConfig } from "@/config/types";
 import { reviewNewFiles } from "@/domain/file-review/reviewer";
-import { getNewFileContents } from "@/infra/git/changes";
+import { readNewFileContents } from "@/infra/git/changes";
 import { CliError } from "@/shared/errors";
 import { question } from "@/shared/input";
 import { createLogger } from "@/shared/logger";
 
 const log = createLogger("review");
 
+/** 确认继续提交的回答（大小写不敏感，其余一律视为拒绝）。 */
+const CONFIRM_WORDS = new Set(["y", "yes"]);
+
 export async function runReviewGate(
   config: AppConfig,
   stagedOnly: boolean,
 ): Promise<void> {
-  const newFiles = getNewFileContents(stagedOnly);
+  const newFiles = readNewFileContents(stagedOnly);
   if (newFiles.length === 0) {
     log.debug("未检测到新增文件，跳过审查门禁");
     return;
@@ -37,9 +40,8 @@ export async function runReviewGate(
   }
   console.log(`原因：${result.reason}`);
 
-  const CONFIRM_ANSWERS = new Set(["y", "yes"]);
   const answer = (await question("是否继续提交？(y/N): ")).trim().toLowerCase();
-  if (!CONFIRM_ANSWERS.has(answer)) {
+  if (!CONFIRM_WORDS.has(answer)) {
     throw new CliError("用户取消提交。");
   }
 

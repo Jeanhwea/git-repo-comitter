@@ -1,9 +1,10 @@
 import { execGit } from "../runner";
 
 /**
- * 文件 diff 模块 —— 处理层。
- * 把「暂存区文本 diff 抽取 + 二进制过滤 + 二进制段拼接」从原 diff.ts 迁来，
- * 由调用方（index.ts）基于变更集的二进制清单驱动，保持原算法不变。
+ * 文件 diff 模块 —— 文本组装层。
+ *
+ * 负责把「暂存区文本 diff」与「二进制文件名清单段」拼成一份可喂给 LLM 的文本：
+ * 二进制清单由调用方（index.ts）基于变更集给出，本层只做组装，不做变更判定。
  */
 
 /**
@@ -16,7 +17,7 @@ export function buildStagedDiff(
   hasTextFiles: boolean,
 ): string {
   if (binaryFiles.length === 0) {
-    return execGit(["diff", "--cached"], { tolerateError: true });
+    return execGit(["diff", "--cached"], { allowFailure: true });
   }
 
   let diff = "";
@@ -26,9 +27,9 @@ export function buildStagedDiff(
     for (const file of binaryFiles) {
       args.push(`:(exclude,top)${file}`);
     }
-    diff = execGit(args, { tolerateError: true });
+    diff = execGit(args, { allowFailure: true });
     if (!diff.trim()) {
-      diff = execGit(["diff", "--cached"], { tolerateError: true });
+      diff = execGit(["diff", "--cached"], { allowFailure: true });
     }
   }
 

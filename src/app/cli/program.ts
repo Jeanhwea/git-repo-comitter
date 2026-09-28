@@ -12,7 +12,7 @@ import { runInit } from "@/app/commands/init";
 import { CliError } from "@/shared/errors";
 import { type LogLevel, setLogLevel } from "@/shared/logger";
 
-export function getVersion(): string {
+function getVersion(): string {
   const pkgPath = resolve(__dirname, "..", "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   return pkg.version;

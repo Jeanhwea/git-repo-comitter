@@ -5,7 +5,7 @@ import { runReviewGate } from "@/app/steps/review";
 import { loadConfig } from "@/config/loader";
 import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
-import { hasChangesToStage, hasStagedChanges } from "@/infra/git/changes";
+import { hasStagedChanges, hasUnstagedChanges } from "@/infra/git/changes";
 import { getStagedDiff } from "@/infra/git/diff";
 import { gitAddAll, gitCommit, isGitRepo } from "@/infra/git/repo";
 import { CliError } from "@/shared/errors";
@@ -26,7 +26,11 @@ async function ensureConfig(): Promise<AppConfig> {
   return config;
 }
 
-function stageOrProceed(stagedOnly: boolean): void {
+/**
+ * 提交前把待提交内容放进暂存区：
+ * --staged-only 时沿用用户已暂存的内容（没有则报错）；否则把未暂存的变更全部 git add。
+ */
+function stageChanges(stagedOnly: boolean): void {
   if (stagedOnly) {
     if (!hasStagedChanges()) {
       throw new CliError("没有已暂存的变更，请先使用 git add 暂存文件。");
@@ -34,7 +38,7 @@ function stageOrProceed(stagedOnly: boolean): void {
     console.log("仅提交暂存变更...");
     return;
   }
-  if (hasChangesToStage()) {
+  if (hasUnstagedChanges()) {
     console.log("暂存所有变更...");
     gitAddAll();
   }
@@ -73,7 +77,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     }
   });
 
-  await measure("暂存变更", () => stageOrProceed(!!options.stagedOnly));
+  await measure("暂存变更", () => stageChanges(!!options.stagedOnly));
   await measure("文件审查门禁", () =>
     runReviewGate(config, !!options.stagedOnly),
   );

@@ -1,12 +1,12 @@
 import { getStagedChangeSet } from "../changes";
-import { buildStagedDiff } from "./process";
+import { buildStagedDiff } from "./build";
 
 export * from "./split";
 export { buildStagedDiff };
 
 /**
  * 取得可直接喂给 LLM 的暂存区 diff：
- * 排除二进制内容、追加二进制文件名清单段。逻辑委托给 process 层，
+ * 排除二进制内容、追加二进制文件名清单段。文本组装委托给 build 层，
  * 二进制清单来自 changes 模块的变更集，保证 diff 与 change 同源。
  */
 export function getStagedDiff(): string {

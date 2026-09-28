@@ -1,11 +1,15 @@
 /**
  * 领域层 —— 提交信息格式校验。
  *
- * 只保留校验规则：与 SYSTEM_PROMPT 的 rules / output 节一一对应，
+ * 只保留校验规则：与 COMMIT_SYSTEM_PROMPT 的 rules / output 节一一对应，
  * 避免规则写了却没人校验、坏结果直接流到 git commit。
  * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
  */
 import type { ValidationOutcome } from "@/infra/llm/retry";
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
 
 const ALLOWED_TYPES = new Set([
   "feat",
@@ -24,18 +28,17 @@ const ALLOWED_TYPES = new Set([
 const HEADER_PATTERN =
   /^(?<type>[a-zA-Z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:\s*(?<description>.+)$/;
 
-const MAX_LINE_LENGTH = 78;
-
 export function validateCommitMessage(
   message: string,
 ): ValidationOutcome<string> {
-  const firstBlank = message.indexOf("\n\n");
+  // 标题与正文以空行分隔；没有空行说明只有标题。
+  const bodyBreak = message.indexOf("\n\n");
   const header =
-    firstBlank === -1 ? message.trim() : message.slice(0, firstBlank).trim();
-  const body = firstBlank === -1 ? "" : message.slice(firstBlank + 2).trim();
+    bodyBreak === -1 ? message.trim() : message.slice(0, bodyBreak).trim();
+  const body = bodyBreak === -1 ? "" : message.slice(bodyBreak + 2).trim();
 
-  const match = header.match(HEADER_PATTERN);
-  if (!match) {
+  const matched = header.match(HEADER_PATTERN);
+  if (!matched) {
     return {
       valid: false,
       reason:
@@ -43,7 +46,7 @@ export function validateCommitMessage(
     };
   }
 
-  const type = match.groups?.type;
+  const type = matched.groups?.type;
   if (!type || !ALLOWED_TYPES.has(type)) {
     return {
       valid: false,
@@ -51,20 +54,21 @@ export function validateCommitMessage(
     };
   }
 
-  if (header.length > MAX_LINE_LENGTH) {
+  if (header.length > MAX_HEADER_LENGTH) {
     return {
       valid: false,
-      reason: `标题行超过 ${MAX_LINE_LENGTH} 字符限制 (当前 ${header.length} 字符)`,
+      reason: `标题行超过 ${MAX_HEADER_LENGTH} 字符限制 (当前 ${header.length} 字符)，请压缩 description`,
     };
   }
 
+  // 正文（要点与脚注）行宽上限比标题宽松：需要容纳文件名等定位信息。
   const longLines = body
     .split("\n")
-    .filter((line) => line.length > MAX_LINE_LENGTH);
+    .filter((line) => line.length > MAX_BODY_LINE_LENGTH);
   if (longLines.length > 0) {
     return {
       valid: false,
-      reason: `正文行超出 ${MAX_LINE_LENGTH} 字符限制: ${longLines.join(", ")}`,
+      reason: `正文行超出 ${MAX_BODY_LINE_LENGTH} 字符限制 (最长 ${Math.max(...longLines.map((line) => line.length))} 字符): ${longLines.slice(0, 3).join(", ")}`,
     };
   }
 

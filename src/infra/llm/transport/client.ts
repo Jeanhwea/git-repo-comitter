@@ -1,7 +1,7 @@
 /**
  * LLM 基础设施 —— 传输层。
  *
- * 只做两件事：按配置构造客户端、发起一次聊天补全并抽取文本。
+ * 对外只暴露一次「发消息、取回文本」的调用；客户端按配置现场构造，不对外暴露。
  * 原先自带的 singleTurn 自行组装 system+user 消息，与 prompts.buildMessages
  * 形成两套消息组装（I06 的 P5），已删除，统一由提示词模块组装后传入。
  */
@@ -16,7 +16,7 @@ import { extractContent } from "./response";
 
 const log = createLogger("llm");
 
-export function createClient(config: AppConfig): OpenAI {
+function createClient(config: AppConfig): OpenAI {
   if (!config.apiKey) {
     throw new CliError("API Key 未设置，请运行 `grc init` 进行配置。");
   }

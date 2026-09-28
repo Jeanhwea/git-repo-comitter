@@ -1,4 +1,9 @@
-import { COMMIT_TYPES, TYPE_SELECTION } from "../blocks/commit-types";
+import {
+  MAX_BODY_LINE_LENGTH,
+  MAX_HEADER_LENGTH,
+} from "@/shared/commit-limits";
+
+import { COMMIT_TYPES, TYPE_SELECTION_RULE } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
 import { LANGUAGE_RULES } from "../blocks/language";
 import { OUTPUT_COMMON_RULES } from "../blocks/output";
@@ -7,7 +12,7 @@ import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
 import { wrapPartialDiff } from "./wrappers";
 
-export const PARTIAL_SYSTEM_PROMPT = `${COMMIT_ROLE}
+const PARTIAL_SYSTEM_PROMPT = `${COMMIT_ROLE}
 
 <context>
 你会收到一个大型 Git diff 的其中一部分（以 diff_part 标记包裹），只包含部分文件的变更。本次产出只是其中一条草稿，后续会与其他批次的草稿合并为一条完整的提交信息。
@@ -26,9 +31,9 @@ ${COMMIT_TYPES}
 <rules>
 ${COMMIT_FORMAT_RULES}
 
-6. ${TYPE_SELECTION}
+6. ${TYPE_SELECTION_RULE}
 7. 只描述当前这部分 diff 中实际出现的变更，禁止推测或补全省略部分的内容。
-8. 正文要点必须点出受影响的关键文件名或模块名（供后续合并时去重），以 "- " 开头并独占一行，每行不超过 78 个字符，要点数量不超过 5 条。
+8. 正文要点必须点出受影响的关键文件名或模块名（供后续合并时去重），以 "- " 开头并独占一行，要点数量不超过 5 条；每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文行宽上限比标题行的 ${MAX_HEADER_LENGTH} 宽松）。
 9. 禁止出现「其余变更」「完整改动见其他部分」「以上为全部变更」等指向整体的表述，禁止写入批次编号或分隔标记。
 10. 本批文件跨多个模块时，必须选取覆盖主要变更的 scope，无法确定时省略 scope；禁止选择与本批变更无关的类型。
 11. 遇到二进制文件变更或「已省略具体差异」的折叠说明时，必须只记录文件名并依据文件名推断意图，禁止杜撰改动细节，禁止把「变更内容过大」等说明文字写入输出。
