@@ -28,6 +28,18 @@ const ALLOWED_TYPES = new Set([
 const HEADER_PATTERN =
   /^(?<type>[a-zA-Z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:\s*(?<description>.+)$/;
 
+/**
+ * 拼接多条提交信息时残留的分隔线（如 ======= 、------ ）。
+ * 提交信息正文里不存在合法用途，出现即判定为多条消息被并在一起。
+ */
+const SEPARATOR_PATTERN = /^[=-]{3,}$/;
+
+/** 判定一行是否为一条完整的 Conventional Commits 标题行（type 必须取自允许列表）。 */
+function isCommitHeaderLine(line: string): boolean {
+  const type = line.match(HEADER_PATTERN)?.groups?.type;
+  return !!type && ALLOWED_TYPES.has(type);
+}
+
 export function validateCommitMessage(
   message: string,
 ): ValidationOutcome<string> {
@@ -51,6 +63,24 @@ export function validateCommitMessage(
     return {
       valid: false,
       reason: `type 字段的值 "${type}" 不在允许的列表中 (${[...ALLOWED_TYPES].join(", ")})`,
+    };
+  }
+
+  // 一次只能提交一条信息：第二条标题行或分隔线都说明多条提交信息被并进了一条。
+  const lines = message.split("\n").map((line) => line.trim());
+  const separator = lines.find((line) => SEPARATOR_PATTERN.test(line));
+  if (separator) {
+    return {
+      valid: false,
+      reason: `提交信息中出现分隔线 "${separator}"，一次只能输出一条提交信息，禁止把多条提交信息拼在一起`,
+    };
+  }
+
+  const headerLines = lines.filter(isCommitHeaderLine);
+  if (headerLines.length > 1) {
+    return {
+      valid: false,
+      reason: `提交信息中出现 ${headerLines.length} 条 Conventional Commits 标题行（第二条为 "${headerLines[1]}"），一次只能输出一条提交信息，多主题变更必须合并为一条标题加一组要点`,
     };
   }
 

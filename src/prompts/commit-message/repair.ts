@@ -16,4 +16,5 @@ export const commitMessageRepairHint = (reason: string): string =>
   `必须逐条对照系统提示词中的 rules 与 output 节重新生成提交信息：` +
   `标题使用半角冒号加空格、type 取自 commit_types；` +
   `标题行不超过 ${MAX_HEADER_LENGTH} 个字符，正文每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文比标题宽松）。` +
+  `一次只能输出一条提交信息：只允许一个标题行，禁止把多条提交信息拼在一起，禁止出现第二条标题行或分隔线；多主题变更必须合并为一条标题加一组要点。` +
   `只输出提交信息本身，禁止添加任何解释或代码围栏。输出语言仍为简体中文，参照 language 节。`;

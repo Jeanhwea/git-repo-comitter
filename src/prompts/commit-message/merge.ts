@@ -30,7 +30,6 @@ ${COMMIT_TYPES}
 
 <rules>
 ${COMMIT_FORMAT_RULES}
-
 6. drafts、draft、notice 标记及其 index 序号只是批次包裹信息，必须忽略，禁止把序号、批次编号或标记文字写入输出。
 7. 必须输出一条形如 type[(scope)][!]: description 的标题行，type 必填且必须取自 commit_types。
 8. type 必须选择最能概括全部草稿的变更且只取唯一结果：全部草稿同类时取该类型；类型冲突时必须按 ${TYPE_PRIORITY_TEXT} 的次序取其一。
@@ -102,7 +101,7 @@ feat(cli): 新增 --staged 参数等多项改动
 <output>
 1. 只输出合并后的提交信息本身，禁止添加任何解释、前缀、标题、批次编号或 Markdown 代码围栏。
 ${OUTPUT_COMMON_RULES}
-4. 所有草稿均为「chore: 无实质变更」时，必须输出 chore: 无实质变更，禁止输出代码块围栏或解释文字。
+5. 所有草稿均为「chore: 无实质变更」时，必须输出 chore: 无实质变更，禁止输出代码块围栏或解释文字。
 </output>`;
 
 /** 分批草稿合并的提示词定义（含 user 消息构造）。 */
