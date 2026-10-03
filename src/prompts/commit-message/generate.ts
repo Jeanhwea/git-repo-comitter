@@ -30,7 +30,6 @@ ${COMMIT_TYPES}
 
 <rules>
 ${COMMIT_FORMAT_RULES}
-
 6. ${TYPE_SELECTION_RULE}
 7. description 禁止使用「修改了」「更新了」等无信息量的措辞。
 8. 破坏性变更必须在 type 或 scope 后添加 ! 标记，并在脚注中补充一行 BREAKING CHANGE: 影响说明。
