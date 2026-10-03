@@ -12,9 +12,10 @@ import {
 } from "@/shared/commit-limits";
 
 export const commitMessageRepairHint = (reason: string): string =>
-  `上一次输出未通过校验：${reason}。\n` +
-  `必须逐条对照系统提示词中的 rules 与 output 节重新生成提交信息：` +
-  `标题使用半角冒号加空格、type 取自 commit_types；` +
-  `标题行不超过 ${MAX_HEADER_LENGTH} 个字符，正文每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文比标题宽松）。` +
-  `一次只能输出一条提交信息：只允许一个标题行，禁止把多条提交信息拼在一起，禁止出现第二条标题行或分隔线；多主题变更必须合并为一条标题加一组要点。` +
+  `上一次输出未通过校验，命中的规则如下（方括号内为规则编号）：\n${reason}\n` +
+  `必须逐条对照上述编号一次性全部修正后重新输出，禁止只改其中一条，也禁止解释或修改过程：\n` +
+  `- [A4] 标题使用半角冒号加恰好一个半角空格分隔 type 与 description；[A3] scope 为小写英文连字符分词，空 scope 直接省略括号；[A6] description 非空且不以句号结尾。\n` +
+  `- [C1] 正文与标题相隔一个空行；[C2] 正文每行以半角连字符加空格 "- " 开头；[D1] 脚注写作 Token: value 或 Token #value。\n` +
+  `- [B1][B2][B3] 只允许一个标题行，禁止第二条标题行、分隔线与序号候选，多主题变更合并为一条标题加一组要点。\n` +
+  `- [A8] 标题行不超过 ${MAX_HEADER_LENGTH} 个字符，正文每行不超过 ${MAX_BODY_LINE_LENGTH} 个字符（正文比标题宽松）。\n` +
   `只输出提交信息本身，禁止添加任何解释或代码围栏。输出语言仍为简体中文，参照 language 节。`;

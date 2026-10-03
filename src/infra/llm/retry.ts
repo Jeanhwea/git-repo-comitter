@@ -18,9 +18,10 @@ const log = createLogger("llm");
 
 export const MAX_RETRIES = 3;
 
-/** 校验结论：成功时携带值，失败时携带原因（可辨识联合，免除类型断言）。 */
+/** 校验结论：成功时携带值（语言类等降级为告警而非拦截），失败时携带原因（可辨识联合，免除类型断言）。 */
 export type ValidationOutcome<T> =
-  { valid: true; value: T } | { valid: false; reason?: string };
+  | { valid: true; value: T; warnings?: string[] }
+  | { valid: false; reason?: string };
 
 export interface ValidatedCallOptions<T> {
   validate: (content: string) => ValidationOutcome<T>;
@@ -62,7 +63,13 @@ export async function callWithValidation<T>(
     history.push({ role: "assistant", content: lastMessage });
 
     const outcome = options.validate(lastMessage);
-    if (outcome.valid) return outcome.value;
+    if (outcome.valid) {
+      for (const warning of outcome.warnings ?? []) {
+        log.debug(`${label}告警: ${warning}`);
+        console.log(`  提示: ${warning}`);
+      }
+      return outcome.value;
+    }
 
     if (attempt === maxAttempts) {
       throw new Error(
