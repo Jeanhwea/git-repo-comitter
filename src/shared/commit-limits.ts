@@ -18,3 +18,9 @@ export const MAX_HEADER_LENGTH = 78;
  * 且正文不参与 --oneline 展示，118 在常见终端与 GitHub 提交页下仍能完整显示。
  */
 export const MAX_BODY_LINE_LENGTH = 118;
+
+/**
+ * 正文要点的最多条数。
+ * 超过 5 条说明没有按主题归并，阅读成本高于收益；提示词与校验器共用此上限。
+ */
+export const MAX_BODY_BULLETS = 5;
