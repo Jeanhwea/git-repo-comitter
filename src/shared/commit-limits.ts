@@ -21,6 +21,6 @@ export const MAX_BODY_LINE_LENGTH = 118;
 
 /**
  * 正文要点的最多条数。
- * 超过 5 条说明没有按主题归并，阅读成本高于收益；提示词与校验器共用此上限。
+ * 超过上限说明没有按主题归并，阅读成本高于收益；提示词与校验器共用此上限。
  */
-export const MAX_BODY_BULLETS = 5;
+export const MAX_BODY_BULLETS = 10;
