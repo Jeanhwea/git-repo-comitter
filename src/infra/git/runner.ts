@@ -10,6 +10,12 @@ import { execFileSync } from "child_process";
 interface GitExecOptions {
   /** 命令失败时返回空串而不抛出（用于「有没有」这类探测式调用）。 */
   allowFailure?: boolean;
+  /**
+   * 目标仓库路径。
+   * F05：库调用方通过 commit({ repoPath }) 指定，避免依赖进程的当前工作目录；
+   * 缺省时沿用 process.cwd()，与改造前行为一致。
+   */
+  cwd?: string;
 }
 
 const GIT_MAX_BUFFER = 1024 * 1024 * 1024;
@@ -19,7 +25,7 @@ const GIT_GLOBAL_ARGS = ["-c", "core.quotepath=false"];
 export function execGit(args: string[], options: GitExecOptions = {}): string {
   try {
     return execFileSync("git", [...GIT_GLOBAL_ARGS, ...args], {
-      cwd: process.cwd(),
+      cwd: options.cwd ?? process.cwd(),
       encoding: "utf-8",
       maxBuffer: GIT_MAX_BUFFER,
     });

@@ -3,6 +3,8 @@ import { execGit } from "./runner";
 /**
  * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
  * 把原先堆在 diff.ts 里的变更采集逻辑迁至此，并以 ChangeSet 作为一等模型。
+ *
+ * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit({ repoPath })）。
  */
 
 /**
@@ -35,12 +37,12 @@ export interface ChangeSet {
 
 type NewFileScope = "staged" | "unstaged";
 
-function listNewFiles(scope: NewFileScope): string[] {
+function listNewFiles(scope: NewFileScope, cwd?: string): string[] {
   const args =
     scope === "staged"
       ? ["diff", "--cached", "--name-status", "--diff-filter=A"]
       : ["diff", "--name-status", "--diff-filter=A"];
-  const output = execGit(args, { allowFailure: true });
+  const output = execGit(args, { allowFailure: true, cwd });
   if (!output.trim()) return [];
   return output
     .split("\n")
@@ -49,29 +51,30 @@ function listNewFiles(scope: NewFileScope): string[] {
     .filter(Boolean);
 }
 
-function listStagedNewFiles(): string[] {
-  return listNewFiles("staged");
+function listStagedNewFiles(cwd?: string): string[] {
+  return listNewFiles("staged", cwd);
 }
 
-function listUnstagedNewFiles(): string[] {
-  return listNewFiles("unstaged");
+function listUnstagedNewFiles(cwd?: string): string[] {
+  return listNewFiles("unstaged", cwd);
 }
 
 /** 读取新增文件的内容；二进制文件与读不到的内容以占位文本代替。 */
 export function readNewFileContents(
   onlyStaged: boolean = false,
+  cwd?: string,
 ): { path: string; content: string }[] {
-  const stagedNewFiles = listStagedNewFiles();
+  const stagedNewFiles = listStagedNewFiles(cwd);
   const stagedSet = new Set(stagedNewFiles);
   const newFiles = onlyStaged
     ? stagedNewFiles
     : [
         ...stagedNewFiles,
-        ...listUnstagedNewFiles().filter((f) => !stagedSet.has(f)),
+        ...listUnstagedNewFiles(cwd).filter((f) => !stagedSet.has(f)),
       ];
 
   const binarySet = new Set(
-    getStagedFileStats()
+    getStagedFileStats(cwd)
       .filter((s) => s.isBinary)
       .map((s) => s.path),
   );
@@ -80,7 +83,10 @@ export function readNewFileContents(
     if (binarySet.has(filePath)) {
       return { path: filePath, content: "[二进制文件，内容已省略]" };
     }
-    const content = execGit(["show", `:${filePath}`], { allowFailure: true });
+    const content = execGit(["show", `:${filePath}`], {
+      allowFailure: true,
+      cwd,
+    });
     // 兜底：通过 NULL 字节检测二进制内容
     if (content.includes("\0")) {
       return { path: filePath, content: "[二进制文件，内容已省略]" };
@@ -89,17 +95,20 @@ export function readNewFileContents(
   });
 }
 
-export function hasStagedChanges(): boolean {
+export function hasStagedChanges(cwd?: string): boolean {
   // 与变更集同源（numstat），避免出现「是否有暂存变更」的两种判定口径。
-  return getStagedFileStats().length > 0;
+  return getStagedFileStats(cwd).length > 0;
 }
 
 /**
  * 是否存在尚未暂存的变更：未暂存的修改/删除，或未被跟踪的新文件。
  * 已暂存（X 列非空、Y 列为空格）的变更不算在内，因为 git add . 对此是空操作。
  */
-export function hasUnstagedChanges(): boolean {
-  const output = execGit(["status", "--porcelain"], { allowFailure: true });
+export function hasUnstagedChanges(cwd?: string): boolean {
+  const output = execGit(["status", "--porcelain"], {
+    allowFailure: true,
+    cwd,
+  });
   if (!output.trim()) return false;
   return output.split("\n").some((line) => line.length >= 2 && line[1] !== " ");
 }
@@ -121,9 +130,10 @@ function toStat(add: string, del: string, path: string): StagedFileStat {
   };
 }
 
-function getStagedFileStats(): StagedFileStat[] {
+function getStagedFileStats(cwd?: string): StagedFileStat[] {
   const output = execGit(["diff", "--cached", "-z", "--numstat"], {
     allowFailure: true,
+    cwd,
   });
   if (!output.trim()) return [];
 
@@ -163,9 +173,9 @@ function getStagedFileStats(): StagedFileStat[] {
  * 采集当前暂存区的完整变更集。供审查门禁、提交流程等以结构化方式消费，
  * 也可直接调用 getNewFileContents / hasStagedChanges / hasUnstagedChanges。
  */
-export function getStagedChangeSet(): ChangeSet {
-  const stats = getStagedFileStats();
-  const addedPaths = new Set(listStagedNewFiles());
+export function getStagedChangeSet(cwd?: string): ChangeSet {
+  const stats = getStagedFileStats(cwd);
+  const addedPaths = new Set(listStagedNewFiles(cwd));
   const files: FileChange[] = stats.map((s) => ({
     path: s.path,
     status: addedPaths.has(s.path) ? "added" : "modified",
@@ -178,6 +188,6 @@ export function getStagedChangeSet(): ChangeSet {
     newFiles: files.filter((f) => f.status === "added"),
     binaryFiles: files.filter((f) => f.isBinary),
     hasStagedChanges: files.length > 0,
-    hasUnstagedChanges: hasUnstagedChanges(),
+    hasUnstagedChanges: hasUnstagedChanges(cwd),
   };
 }
