@@ -48,7 +48,7 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
 
     if (fileHeader) {
       flush();
-      blockPath = fileHeader[1];
+      blockPath = fileHeader[1] ?? "";
       flushHeader();
       blockLines.push(line);
       continue;

@@ -9,7 +9,7 @@ import { resolve } from "path";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";
-import { CliError } from "@/shared/errors";
+import { GrcError } from "@/shared/errors";
 import { type LogLevel, setLogLevel } from "@/shared/logger";
 
 function getVersion(): string {
@@ -19,7 +19,8 @@ function getVersion(): string {
 }
 
 function handleCliError(err: unknown): never {
-  if (err instanceof CliError) {
+  // F05：错误码由领域层给出，退出码翻译只发生在 CLI 出口这一处。
+  if (err instanceof GrcError) {
     console.error("错误:", err.message);
     process.exit(err.exitCode);
   }

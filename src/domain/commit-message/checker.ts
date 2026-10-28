@@ -111,7 +111,7 @@ function validateHeader(header: string): {
     return { reasons };
   }
 
-  const { type, scope, bang = "", space = "", description = "" } = groups;
+  const { type = "", scope, bang = "", space = "", description = "" } = groups;
 
   if (!ALLOWED_TYPES.has(type)) {
     reasons.push(
@@ -188,7 +188,7 @@ export function validateCommitMessage(
   }
 
   const lines = normalized.trim().split("\n");
-  const header = lines[0];
+  const header = lines[0] ?? "";
   const { reasons: headerReasons, fields } = validateHeader(header);
   reasons.push(...headerReasons);
 
@@ -203,9 +203,9 @@ export function validateCommitMessage(
   const contentLines = bodyLines.filter((line) => line.trim() !== "");
 
   // C1：正文行紧接标题行，说明中间少了那个空行。
-  if (contentLines.length > 0 && bodyLines[0].trim() !== "") {
+  if (contentLines.length > 0 && (bodyLines[0] ?? "").trim() !== "") {
     reasons.push(
-      `[C1] 正文必须与标题相隔一个空行，禁止用单个换行直接接正文（当前第二行："${snippet(bodyLines[0])}"）`,
+      `[C1] 正文必须与标题相隔一个空行，禁止用单个换行直接接正文（当前第二行："${snippet(bodyLines[0] ?? "")}"）`,
     );
   }
 
@@ -262,26 +262,26 @@ export function validateCommitMessage(
 
   if (extraHeaders.length > 0) {
     reasons.push(
-      `[B1] 提交信息中共出现 ${extraHeaders.length + 1} 条 Conventional Commits 标题行（第二条为 "${snippet(extraHeaders[0])}"），` +
+      `[B1] 提交信息中共出现 ${extraHeaders.length + 1} 条 Conventional Commits 标题行（第二条为 "${snippet(extraHeaders[0] ?? "")}"），` +
         "一次只能输出一条提交信息，多主题变更必须合并为一条标题加一组要点",
     );
   }
 
   if (candidates.length > 0) {
     reasons.push(
-      `[B3] 禁止用序号或候选标记输出多个版本（违规行："${snippet(candidates[0])}"），必须择优输出唯一一条`,
+      `[B3] 禁止用序号或候选标记输出多个版本（违规行："${snippet(candidates[0] ?? "")}"），必须择优输出唯一一条`,
     );
   }
 
   if (brokenTrailers.length > 0) {
     reasons.push(
-      `[D1] 脚注必须使用 git trailer 格式 Token: value 或 Token #value，冒号或 # 后必须有一个半角空格（违规行："${snippet(brokenTrailers[0])}"）`,
+      `[D1] 脚注必须使用 git trailer 格式 Token: value 或 Token #value，冒号或 # 后必须有一个半角空格（违规行："${snippet(brokenTrailers[0] ?? "")}"）`,
     );
   }
 
   if (malformed.length > 0) {
     reasons.push(
-      `[C2] 正文每行必须是以 "${BULLET_PREFIX.trim()} " 开头的要点或 git trailer 脚注，禁止 Markdown 标题、加粗、星号列表与不换行长段落（违规行："${snippet(malformed[0])}"）`,
+      `[C2] 正文每行必须是以 "${BULLET_PREFIX.trim()} " 开头的要点或 git trailer 脚注，禁止 Markdown 标题、加粗、星号列表与不换行长段落（违规行："${snippet(malformed[0] ?? "")}"）`,
     );
   }
 

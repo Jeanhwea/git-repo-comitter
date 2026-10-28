@@ -3,7 +3,7 @@
  */
 import {
   DEFAULT_CONFIG,
-  loadUserConfig,
+  loadUserConfigFile,
   saveUserConfig,
 } from "@/config/loader";
 import { CliError } from "@/shared/errors";
@@ -25,7 +25,7 @@ async function ask(
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");
 
-  const existing = loadUserConfig();
+  const existing = loadUserConfigFile();
 
   const defaultEndpoint = existing.endpoint || DEFAULT_CONFIG.endpoint;
   const defaultModel = existing.llm?.model || DEFAULT_CONFIG.llm.model;

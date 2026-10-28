@@ -154,7 +154,7 @@ function getStagedFileStats(cwd?: string): StagedFileStat[] {
     if (renameEntry) {
       const newPath = fields[i + 2];
       if (newPath) {
-        stats.push(toStat(renameEntry[1], renameEntry[2], newPath));
+        stats.push(toStat(renameEntry[1] ?? "", renameEntry[2] ?? "", newPath));
       }
       i += 3;
       continue;
@@ -162,7 +162,7 @@ function getStagedFileStats(cwd?: string): StagedFileStat[] {
     // 普通条目：三个字段都在同一个 NUL 分隔块内。
     const entry = field.match(/^(\d+|-)\t(\d+|-)\t(.+)$/s);
     if (entry) {
-      stats.push(toStat(entry[1], entry[2], entry[3]));
+      stats.push(toStat(entry[1] ?? "", entry[2] ?? "", entry[3] ?? ""));
     }
     i++;
   }

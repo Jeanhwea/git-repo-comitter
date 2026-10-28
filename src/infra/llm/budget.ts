@@ -37,8 +37,8 @@ export function fitWithinBudget(
   limit: number,
 ): { kept: string[]; omitted: number } {
   let total = 0;
-  for (let i = 0; i < parts.length; i++) {
-    const cost = estimateTokens(parts[i]);
+  for (const [i, part] of parts.entries()) {
+    const cost = estimateTokens(part);
     if (total + cost > limit) {
       return { kept: parts.slice(0, i), omitted: parts.length - i };
     }

@@ -3,17 +3,27 @@
   "version": "1.2.7",
   "description": "A CLI tool that uses LLM to generate Git commit messages and execute commits",
   "type": "module",
-  "main": "dist/index.cjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/types/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/lib.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "bin": {
-    "git-repo-comitter": "dist/index.cjs",
-    "grc": "dist/index.cjs"
+    "git-repo-comitter": "dist/cli.cjs",
+    "grc": "dist/cli.cjs"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --config vite.cli.config.ts && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
@@ -48,16 +58,20 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.63.0",
     "@typescript-eslint/parser": "^8.63.0",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-jsdoc": "^64.5.4",
+    "eslint-plugin-tsdoc": "^0.5.4",
     "globals": "^17.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.9.5",
+    "tsc-alias": "^1.9.9",
     "typescript": "^6.0.3",
     "vite": "^8.1.4"
   },
