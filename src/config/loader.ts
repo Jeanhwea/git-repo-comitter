@@ -7,15 +7,20 @@
  * F05：抽库后配置必须可注入，且默认不得产生「读全局文件 + 终端提问」的副作用：
  * - `resolveConfig()`      纯函数：默认值 + 覆盖值，静默收敛，不读写文件、不交互；
  * - `loadUserConfigFile()` 读取 ~/.grc/config.json，供 CLI 或主动选择的调用方使用；
- * - `loadConfig()`         CLI 便捷入口：给显式配置时走 resolveConfig，否则读文件并允许交互修复。
+ * - `clampLlm()`           按模型上限收敛，只计算不告警，供调用方决定如何提示。
+ *
+ * 架构 A5：配置层只做「数据 + 文件」，不含终端交互、不直接 console 输出。
+ * CLI 的告警与交互式修复上移到 app/config/load.ts。
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
 
-import { question } from "@/shared/input";
+import { createLogger } from "@/shared/logger";
 
 import { type AppConfig, type LLMConfig, type UserConfig } from "./types";
+
+const log = createLogger("config");
 
 /** 配置目录 ~/.grc，配置文件位于其下的 config.json。 */
 const CONFIG_DIR = resolve(homedir(), ".grc");
@@ -35,15 +40,17 @@ export const DEFAULT_CONFIG: AppConfig = {
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** 读取用户配置文件 ~/.grc/config.json；文件不存在或解析失败时返回空配置。 */
+/**
+ * 读取用户配置文件 ~/.grc/config.json；文件不存在或解析失败时返回空配置。
+ *
+ * 解析异常只记 debug 日志：库调用方不应看到意外输出，需要提示的 CLI 可自行开日志级别。
+ */
 export function loadUserConfigFile(): UserConfig {
   if (!existsSync(USER_CONFIG_PATH)) return {};
   try {
     const parsed: unknown = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf-8"));
     if (!isPlainObject(parsed)) {
-      console.warn(
-        `警告：${USER_CONFIG_PATH} 的内容不是 JSON 对象，已忽略用户配置。`,
-      );
+      log.debug(`${USER_CONFIG_PATH} 的内容不是 JSON 对象，已忽略用户配置。`);
       return {};
     }
     return {
@@ -53,8 +60,8 @@ export function loadUserConfigFile(): UserConfig {
         : undefined,
     };
   } catch (err) {
-    console.warn(
-      `警告：解析 ${USER_CONFIG_PATH} 失败，已忽略用户配置。原因：${err instanceof Error ? err.message : String(err)}`,
+    log.debug(
+      `解析 ${USER_CONFIG_PATH} 失败，已忽略用户配置。原因：${err instanceof Error ? err.message : String(err)}`,
     );
     return {};
   }
@@ -73,12 +80,13 @@ export function loadDefaultConfig(): AppConfig {
   };
 }
 
-interface ExceededToken {
+/** 一项超限配置：用户实际写出的数值，与模型允许的上限值。 */
+export interface ExceededToken {
   userValue: number;
   limit: number;
 }
 
-interface LlmClampResult {
+export interface LlmClampResult {
   llm: LLMConfig;
   /** maxOutputTokens 超限时给出（供 CLI 询问是否写回文件），否则为 null。 */
   outputExceeded: ExceededToken | null;
@@ -92,7 +100,9 @@ interface LlmClampResult {
  * 因此库路径（resolveConfig）可完全静默，CLI 路径保留原有交互。
  * @param userLlm - 用户配置的 LLM 片段，缺省时按内置默认值收敛。
  */
-function clampLlm(userLlm: Partial<LLMConfig> | undefined): LlmClampResult {
+export function clampLlm(
+  userLlm: Partial<LLMConfig> | undefined,
+): LlmClampResult {
   const effective = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
   const { maxInputTokens, maxOutputTokens } = DEFAULT_CONFIG.llm;
 
@@ -129,81 +139,5 @@ export function resolveConfig(user?: UserConfig): AppConfig {
     llm,
     apiKey: user?.apiKey || "",
     endpoint: user?.endpoint || DEFAULT_CONFIG.endpoint,
-  };
-}
-
-/**
- * 交互询问是否把超限的 maxOutputTokens 写回配置文件；拒绝时本次仍取上限值。
- * @param userValue - 配置文件中实际写出的超限数值。
- * @param limit - 当前模型允许的上限值，即询问后回写的目标值。
- */
-async function offerRepair(userValue: number, limit: number): Promise<void> {
-  console.warn(
-    `\n⚠️  警告：配置中的 maxOutputTokens (${userValue}) 超过了当前模型的上限 (${limit})。`,
-  );
-
-  const answer = (
-    await question(
-      `  是否将配置文件的 maxOutputTokens 修复为 ${limit}？(Y/n): `,
-    )
-  )
-    .trim()
-    .toLowerCase();
-
-  if (answer !== "" && answer !== "y" && answer !== "yes") {
-    console.log(`  ℹ️  跳过修复，本次仍取较小值 ${limit}。`);
-    return;
-  }
-
-  const userConfig = loadUserConfigFile();
-  saveUserConfig({
-    ...userConfig,
-    llm: {
-      ...DEFAULT_CONFIG.llm,
-      ...(userConfig.llm || {}),
-      maxOutputTokens: limit,
-    },
-  });
-  console.log(`  ✅ 已修复，maxOutputTokens 已设为 ${limit}。`);
-}
-
-export interface LoadConfigOptions {
-  /**
-   * 显式配置。给出时不再读取配置文件、不触发任何交互，
-   * 等价于 resolveConfig(config)，供「配置来自别处」的场景使用。
-   */
-  config?: UserConfig;
-  /** 是否允许交互式修复超限配置，默认 true（仅 CLI 场景有实际意义）。 */
-  interactive?: boolean;
-}
-
-/**
- * CLI 便捷入口：无显式配置时读取 ~/.grc/config.json 并允许交互修复。
- * 库调用方应使用 resolveConfig / loadDefaultConfig，避免隐式全局副作用。
- * @param options - 加载选项：显式配置与是否允许交互修复，缺省一律允许。
- */
-export async function loadConfig(
-  options: LoadConfigOptions = {},
-): Promise<AppConfig> {
-  if (options.config) return resolveConfig(options.config);
-
-  const userConfig = loadUserConfigFile();
-  const { llm, outputExceeded, inputExceeded } = clampLlm(userConfig.llm);
-
-  if (inputExceeded) {
-    console.warn(
-      `\n⚠️  警告：配置中的 maxInputTokens (${inputExceeded.userValue}) 超过了当前模型的上限 (${inputExceeded.limit})，将自动取较小值 ${inputExceeded.limit}。`,
-    );
-  }
-  if (outputExceeded && (options.interactive ?? true)) {
-    await offerRepair(outputExceeded.userValue, outputExceeded.limit);
-  }
-
-  return {
-    ...DEFAULT_CONFIG,
-    ...userConfig,
-    llm,
-    apiKey: userConfig.apiKey || "",
-    endpoint: userConfig.endpoint || DEFAULT_CONFIG.endpoint,
   };
 }

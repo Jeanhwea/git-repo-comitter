@@ -10,7 +10,7 @@ import { Command } from "commander";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";
-import { GrcError } from "@/shared/errors";
+import { CliError, GrcError, type GrcErrorCode } from "@/shared/errors";
 import { type LogLevel, setLogLevel } from "@/shared/logger";
 
 function getVersion(): string {
@@ -19,11 +19,31 @@ function getVersion(): string {
   return pkg.version;
 }
 
+/**
+ * 错误码 → 进程退出码。
+ * 目前所有业务错误码统一映射为 1；保留本表以便后续按语义区分（如用户取消、配置缺失）。
+ */
+const EXIT_CODES: Record<GrcErrorCode, number> = {
+  CONFIG_MISSING: 1,
+  NOT_GIT_REPO: 1,
+  NO_STAGED_CHANGES: 1,
+  NO_CHANGES: 1,
+  USER_CANCELLED: 1,
+  VALIDATION_FAILED: 1,
+  LLM_FAILED: 1,
+  GIT_FAILED: 1,
+  UNKNOWN: 1,
+};
+
 function handleCliError(err: unknown): never {
-  // F05：错误码由领域层给出，退出码翻译只发生在 CLI 出口这一处。
-  if (err instanceof GrcError) {
+  // F05 + 架构 A4：错误码由领域层给出，退出码翻译只发生在 CLI 出口这一处。
+  if (err instanceof CliError) {
     console.error("错误:", err.message);
     process.exit(err.exitCode);
+  }
+  if (err instanceof GrcError) {
+    console.error("错误:", err.message);
+    process.exit(EXIT_CODES[err.code]);
   }
   console.error("意外错误:", err instanceof Error ? err.message : String(err));
   process.exit(1);

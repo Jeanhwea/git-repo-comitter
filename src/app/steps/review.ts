@@ -5,8 +5,8 @@
  * 本次随抽库进一步收敛）：领域层只保留 reviewNewFiles 的纯审查能力，
  * 这里负责把「LLM 审查结论」翻译成终端问答，供 CLI 注入 commit 流程。
  */
+import { question } from "@/app/cli/input";
 import type { ReviewResult } from "@/domain/file-review/reviewer";
-import { question } from "@/shared/input";
 import { createLogger } from "@/shared/logger";
 
 const log = createLogger("review");

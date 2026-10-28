@@ -7,12 +7,12 @@
  *
  * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
  */
-import type { ValidationOutcome } from "@/infra/llm/retry";
 import {
   MAX_BODY_BULLETS,
   MAX_BODY_LINE_LENGTH,
   MAX_HEADER_LENGTH,
 } from "@/shared/commit-limits";
+import type { ValidationOutcome } from "@/shared/validation";
 
 const ALLOWED_TYPES = new Set([
   "feat",

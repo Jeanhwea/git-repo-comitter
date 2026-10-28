@@ -29,7 +29,6 @@ export class GrcError extends Error {
   constructor(
     message: string,
     public readonly code: GrcErrorCode = "UNKNOWN",
-    public readonly exitCode = 1,
   ) {
     super(message);
     this.name = "GrcError";
@@ -37,12 +36,18 @@ export class GrcError extends Error {
 }
 
 /**
- * CLI 专用错误：文案面向终端用户。
- * 退出码由 CLI 适配层（app/cli/program）读取，领域层只负责抛出。
+ * CLI 专用错误：文案面向终端用户，且可指定进程退出码。
+ *
+ * 退出码只存在于本类型——领域错误（GrcError）携带它是 CLI 概念泄漏（架构 A4）。
+ * 其余错误码到退出码的翻译集中在 CLI 出口（app/cli/program）。
  */
 export class CliError extends GrcError {
-  constructor(message: string, code: GrcErrorCode = "UNKNOWN", exitCode = 1) {
-    super(message, code, exitCode);
+  constructor(
+    message: string,
+    code: GrcErrorCode = "UNKNOWN",
+    public readonly exitCode = 1,
+  ) {
+    super(message, code);
     this.name = "CliError";
   }
 }

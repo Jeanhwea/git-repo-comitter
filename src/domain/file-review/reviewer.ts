@@ -6,7 +6,12 @@
  */
 import type { AppConfig } from "@/config/types";
 import { callWithValidation } from "@/infra/llm/retry";
-import { type NewFileContent, buildMessages, reviewPrompt } from "@/prompts";
+import {
+  type NewFileContent,
+  buildMessages,
+  reviewPrompt,
+  reviewRepairHint,
+} from "@/prompts";
 import { createLogger } from "@/shared/logger";
 
 import { type ReviewResult, validateReviewResult } from "./checker";
@@ -26,7 +31,7 @@ export async function reviewNewFiles(
     label: "审查结果",
     temperatureOverride: 0,
     validate: validateReviewResult,
-    repairHint: reviewPrompt.repairHint,
+    repairHint: reviewRepairHint,
   });
   log.trace("审查结论", {
     shouldCommit: result.shouldCommit,

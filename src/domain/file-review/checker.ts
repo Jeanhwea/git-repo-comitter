@@ -4,7 +4,7 @@
  * 与 commit-message/checker.ts 对称（I06 的 P6）：原先 reviewValidator 内嵌在
  * reviewer.ts 中与 LLM 调用混写，现独立成校验器，只负责「结果是否可用」。
  */
-import type { ValidationOutcome } from "@/infra/llm/retry";
+import type { ValidationOutcome } from "@/shared/validation";
 
 export interface ReviewResult {
   shouldCommit: boolean;

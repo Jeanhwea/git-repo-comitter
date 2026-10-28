@@ -4,8 +4,8 @@
  * F05：本命令是库的「参考消费者」——只负责读全局配置、渲染进度与结果、把错误交给
  * CLI 出口翻译成退出码；生成与提交的实际编排在领域层，可被其他代码直接调用。
  */
+import { loadCliConfig } from "@/app/config/load";
 import { createCliReviewHandler } from "@/app/steps/review";
-import { loadConfig } from "@/config/loader";
 import { executeCommit } from "@/domain/commit-flow";
 import { CliError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
@@ -18,7 +18,7 @@ export interface CommitOptions {
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
-  const config = await loadConfig();
+  const config = await loadCliConfig();
   log.trace("已加载配置", {
     endpoint: config.endpoint,
     model: config.llm.model,

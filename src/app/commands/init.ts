@@ -1,13 +1,13 @@
 /**
  * 应用层 —— init 命令：交互式写入 LLM 配置。
  */
+import { question } from "@/app/cli/input";
 import {
   DEFAULT_CONFIG,
   loadUserConfigFile,
   saveUserConfig,
 } from "@/config/loader";
 import { CliError } from "@/shared/errors";
-import { question } from "@/shared/input";
 
 /**
  * 带默认值的提问：括号内展示当前值（或占位提示），直接回车即沿用默认值。

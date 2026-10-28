@@ -17,7 +17,7 @@ export default defineConfig({
   build: {
     emptyOutDir: false, // 保留 vite.config.ts 产出的库文件
     lib: {
-      entry: resolve(__dirname, "src/index.ts"),
+      entry: resolve(__dirname, "src/cli.ts"),
       name: "grc",
       fileName: "cli",
       formats: ["cjs"],

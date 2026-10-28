@@ -7,7 +7,7 @@ import { resolve } from "path";
  * 以 src/lib.ts 为入口产出 ESM + CJS 双格式供其他代码调用：
  * - dist/index.js   ESM（package.json 为 "type": "module"，.js 即 ESM）
  * - dist/index.cjs  CJS
- * 类型声明由 dts-bundle-generator 另行产出（见 package.json 的 build:types）。
+ * 类型声明由 `tsc -p tsconfig.build.json` + `tsc-alias` 产出到 dist/types/
  *
  * 注意：不带 shebang；且本配置先于 CLI 构建运行，以便正常清空 outDir。
  */
