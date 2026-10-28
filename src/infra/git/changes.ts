@@ -4,7 +4,7 @@ import { execGit } from "./runner";
  * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
  * 把原先堆在 diff.ts 里的变更采集逻辑迁至此，并以 ChangeSet 作为一等模型。
  *
- * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit({ repoPath })）。
+ * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit(\{ repoPath \})）。
  */
 
 /**
@@ -59,7 +59,11 @@ function listUnstagedNewFiles(cwd?: string): string[] {
   return listNewFiles("unstaged", cwd);
 }
 
-/** 读取新增文件的内容；二进制文件与读不到的内容以占位文本代替。 */
+/**
+ * 读取新增文件的内容；二进制文件与读不到的内容以占位文本代替。
+ * @param onlyStaged - true 时只读取已暂存的新文件，false 时包含未跟踪文件。
+ * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
+ */
 export function readNewFileContents(
   onlyStaged: boolean = false,
   cwd?: string,
@@ -103,6 +107,7 @@ export function hasStagedChanges(cwd?: string): boolean {
 /**
  * 是否存在尚未暂存的变更：未暂存的修改/删除，或未被跟踪的新文件。
  * 已暂存（X 列非空、Y 列为空格）的变更不算在内，因为 git add . 对此是空操作。
+ * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
  */
 export function hasUnstagedChanges(cwd?: string): boolean {
   const output = execGit(["status", "--porcelain"], {
@@ -120,7 +125,12 @@ interface StagedFileStat {
   deletions: number;
 }
 
-/** numstat 中 "-" 表示二进制文件（无行统计）。 */
+/**
+ * numstat 中 "-" 表示二进制文件（无行统计）。
+ * @param add - numstat 的第一列（新增行数，"-" 表示二进制文件）。
+ * @param del - numstat 的第二列（删除行数，"-" 表示二进制文件）。
+ * @param path - 文件路径（重命名/复制取新路径）。
+ */
 function toStat(add: string, del: string, path: string): StagedFileStat {
   return {
     path,
@@ -172,6 +182,7 @@ function getStagedFileStats(cwd?: string): StagedFileStat[] {
 /**
  * 采集当前暂存区的完整变更集。供审查门禁、提交流程等以结构化方式消费，
  * 也可直接调用 getNewFileContents / hasStagedChanges / hasUnstagedChanges。
+ * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
  */
 export function getStagedChangeSet(cwd?: string): ChangeSet {
   const stats = getStagedFileStats(cwd);

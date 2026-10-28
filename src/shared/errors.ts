@@ -41,11 +41,7 @@ export class GrcError extends Error {
  * 退出码由 CLI 适配层（app/cli/program）读取，领域层只负责抛出。
  */
 export class CliError extends GrcError {
-  constructor(
-    message: string,
-    code: GrcErrorCode = "UNKNOWN",
-    exitCode = 1,
-  ) {
+  constructor(message: string, code: GrcErrorCode = "UNKNOWN", exitCode = 1) {
     super(message, code, exitCode);
     this.name = "CliError";
   }

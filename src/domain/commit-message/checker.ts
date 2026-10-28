@@ -81,13 +81,19 @@ function snippet(text: string): string {
     : trimmed;
 }
 
-/** 判定一行是否为 Conventional Commits 标题行（type 必须取自允许列表）。 */
+/**
+ * 判定一行是否为 Conventional Commits 标题行（type 必须取自允许列表）。
+ * @param line - 待判定的正文行。
+ */
 function isHeaderLine(line: string): boolean {
   const type = line.match(LOOSE_HEADER)?.groups?.type;
   return !!type && ALLOWED_TYPES.has(type);
 }
 
-/** 标题行校验：A 组规则。返回 fields 供 D3 / D4 联动判定使用。 */
+/**
+ * 标题行校验：A 组规则。返回 fields 供 D3 / D4 联动判定使用。
+ * @param header - 提交信息的第一行（标题行）。
+ */
 function validateHeader(header: string): {
   reasons: string[];
   fields?: HeaderFields;

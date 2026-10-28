@@ -3,9 +3,10 @@
  *
  * 负责命令注册、全局选项、日志级别与统一错误出口；业务流程委托给 commands/*。
  */
-import { Command } from "commander";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+
+import { Command } from "commander";
 
 import { runCommit } from "@/app/commands/commit";
 import { runInit } from "@/app/commands/init";

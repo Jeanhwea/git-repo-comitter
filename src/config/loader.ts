@@ -90,6 +90,7 @@ interface LlmClampResult {
  * 按模型上限收敛 LLM 配置。
  * 只计算、不产生副作用：是否告警或询问由调用方决定，
  * 因此库路径（resolveConfig）可完全静默，CLI 路径保留原有交互。
+ * @param userLlm - 用户配置的 LLM 片段，缺省时按内置默认值收敛。
  */
 function clampLlm(userLlm: Partial<LLMConfig> | undefined): LlmClampResult {
   const effective = { ...DEFAULT_CONFIG.llm, ...(userLlm || {}) };
@@ -118,6 +119,7 @@ function clampLlm(userLlm: Partial<LLMConfig> | undefined): LlmClampResult {
  *
  * 不读写文件、不触发终端交互，超限时静默取较小值。
  * 这是库调用方组装配置的标准入口。
+ * @param user - 用户覆盖值，缺省时全部字段回落到内置默认值。
  */
 export function resolveConfig(user?: UserConfig): AppConfig {
   const { llm } = clampLlm(user?.llm);
@@ -130,7 +132,11 @@ export function resolveConfig(user?: UserConfig): AppConfig {
   };
 }
 
-/** 交互询问是否把超限的 maxOutputTokens 写回配置文件；拒绝时本次仍取上限值。 */
+/**
+ * 交互询问是否把超限的 maxOutputTokens 写回配置文件；拒绝时本次仍取上限值。
+ * @param userValue - 配置文件中实际写出的超限数值。
+ * @param limit - 当前模型允许的上限值，即询问后回写的目标值。
+ */
 async function offerRepair(userValue: number, limit: number): Promise<void> {
   console.warn(
     `\n⚠️  警告：配置中的 maxOutputTokens (${userValue}) 超过了当前模型的上限 (${limit})。`,
@@ -174,6 +180,7 @@ export interface LoadConfigOptions {
 /**
  * CLI 便捷入口：无显式配置时读取 ~/.grc/config.json 并允许交互修复。
  * 库调用方应使用 resolveConfig / loadDefaultConfig，避免隐式全局副作用。
+ * @param options - 加载选项：显式配置与是否允许交互修复，缺省一律允许。
  */
 export async function loadConfig(
   options: LoadConfigOptions = {},

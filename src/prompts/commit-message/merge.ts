@@ -11,6 +11,7 @@ import { OUTPUT_COMMON_RULES } from "../blocks/output";
 import { COMMIT_ROLE } from "../blocks/role";
 import { COMMIT_SAFETY } from "../blocks/safety";
 import type { PromptDefinition } from "../types";
+
 import { type MergeDraftsInput, wrapDraftsForMerge } from "./wrappers";
 
 const MERGE_SYSTEM_PROMPT = `${COMMIT_ROLE}

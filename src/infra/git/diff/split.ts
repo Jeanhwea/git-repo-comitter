@@ -69,6 +69,8 @@ export function parseDiffBlocks(diff: string): DiffBlock[] {
 /**
  * 把超出 token 预算的块折叠成「只留文件名」的占位说明，
  * 避免单个巨型文件把整份 diff 撑爆上下文。
+ * @param blocks - 切出来的 diff 块，未超预算的原样返回。
+ * @param maxTokens - 单块 token 上限，超出的块被折叠为文件名占位。
  */
 export function collapseOversizedBlocks(
   blocks: DiffBlock[],

@@ -17,8 +17,11 @@ let currentSink: ProgressSink | null = null;
 /**
  * 装配全局输出槽，返回上一个（便于临时替换后还原）。
  * 传 null 表示恢复静默。
+ * @param sink - 要装配的输出槽；传 null 表示恢复静默。
  */
-export function setProgressSink(sink: ProgressSink | null): ProgressSink | null {
+export function setProgressSink(
+  sink: ProgressSink | null,
+): ProgressSink | null {
   const previous = currentSink;
   currentSink = sink;
   return previous;
@@ -28,7 +31,10 @@ export function getProgressSink(): ProgressSink | null {
   return currentSink;
 }
 
-/** 输出一条用户可见进度；未装配输出槽时为空操作。 */
+/**
+ * 输出一条用户可见进度；未装配输出槽时为空操作。
+ * @param message - 待输出的进度文案。
+ */
 export function emitProgress(message: string): void {
   if (!currentSink) return;
   currentSink(message);

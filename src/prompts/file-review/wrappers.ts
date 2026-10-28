@@ -9,10 +9,17 @@ export interface NewFileContent {
   content: string;
 }
 
-/** 包裹单个新增文件，路径写在 path 属性、内容字符数写在 size 属性上。 */
+/**
+ * 包裹单个新增文件，路径写在 path 属性、内容字符数写在 size 属性上。
+ * @param path - 文件路径，写入 path 属性。
+ * @param content - 文件内容（不可读时为占位文本），其长度写入 size 属性。
+ */
 const wrapNewFile = (path: string, content: string): string =>
   `<file path="${path}" size="${content.length}">\n${content}\n</file>`;
 
-/** 包裹全部新增文件。 */
+/**
+ * 包裹全部新增文件。
+ * @param files - 待审查的新增文件列表。
+ */
 export const wrapNewFiles = (files: NewFileContent[]): string =>
   `<new_files>\n${files.map((f) => wrapNewFile(f.path, f.content)).join("\n\n")}\n</new_files>`;

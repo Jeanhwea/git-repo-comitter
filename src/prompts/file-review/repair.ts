@@ -3,6 +3,7 @@
  *
  * 与 commit-message/repair.ts 对称：校验规则留在领域层（domain/file-review/checker.ts），
  * 面向模型的修复文本集中在提示词模块，便于统一维护。
+ * @param reason - 校验失败原因，逐字回传给模型要求其按此修正。
  */
 export const reviewRepairHint = (reason: string): string =>
   `上一次输出未通过校验：${reason}。必须重新输出一个合法的 JSON 对象：` +

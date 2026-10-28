@@ -3,22 +3,38 @@
  * 把 diff、草稿这类不可信内容包进标记内，明确其"数据"身份，降低被模型当作指令执行的风险。
  */
 
-/** 包裹完整 diff。 */
+/**
+ * 包裹完整 diff。
+ * @param diff - 待提交的完整 diff 文本。
+ */
 export const wrapDiff = (diff: string): string => `<diff>\n${diff}\n</diff>`;
 
-/** 包裹分批场景下的部分 diff。 */
+/**
+ * 包裹分批场景下的部分 diff。
+ * @param diff - 当前批次的 diff 片段。
+ */
 export const wrapPartialDiff = (diff: string): string =>
   `<diff_part>\n${diff}\n</diff_part>`;
 
-/** 包裹单条草稿，index 从 1 开始。 */
+/**
+ * 包裹单条草稿，index 从 1 开始。
+ * @param index - 草稿序号，从 1 开始，写入 index 属性供模型引用。
+ * @param draft - 该批次的草稿正文。
+ */
 export const wrapDraft = (index: number, draft: string): string =>
   `<draft index="${index}">\n${draft}\n</draft>`;
 
-/** 包裹草稿集合（若干条已包裹好的草稿文本）。 */
+/**
+ * 包裹草稿集合（若干条已包裹好的草稿文本）。
+ * @param drafts - 已用 wrapDraft 包裹好的草稿文本列表。
+ */
 const wrapDraftList = (drafts: string[]): string =>
   `<drafts>\n${drafts.join("\n\n")}\n</drafts>`;
 
-/** 合并时因长度限制被丢弃的批次提示。 */
+/**
+ * 合并时因长度限制被丢弃的批次提示。
+ * @param count - 被丢弃的批次数。
+ */
 const wrapOmissionNotice = (count: number): string =>
   `<notice>另有 ${count} 个批次的草稿因长度限制已省略</notice>`;
 
@@ -26,7 +42,7 @@ const wrapOmissionNotice = (count: number): string =>
 export interface MergeDraftsInput {
   /** 已用 wrapDraft 包裹、且按 token 预算裁剪后保留下来的草稿。 */
   drafts: string[];
-  /** 因预算不足被丢弃的草稿条数，>0 时附 notice 提示。 */
+  /** 因预算不足被丢弃的草稿条数，\>0 时附 notice 提示。 */
   omittedDrafts: number;
 }
 
@@ -34,6 +50,8 @@ export interface MergeDraftsInput {
  * 包裹合并阶段的全部草稿，并在有丢弃时附上省略提示。
  * 裁剪（依据 token 预算决定保留几条）属于基础设施职责，由调用方完成；
  * 这里只负责标记包裹，使提示词模块不必依赖 token 估算。
+ * @param drafts - 按 token 预算裁剪后保留下来的草稿文本。
+ * @param omittedDrafts - 因预算不足被丢弃的草稿条数。
  */
 export const wrapDraftsForMerge = (
   drafts: string[],

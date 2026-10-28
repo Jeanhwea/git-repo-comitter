@@ -58,10 +58,7 @@ export async function callWithValidation<T>(
       );
       log.trace(`LLM 调用返回，耗时 ${formatElapsed(performance.now() - t0)}`);
       if (!lastMessage) {
-        throw new GrcError(
-          `LLM 在生成${label}时返回了空内容。`,
-          "LLM_FAILED",
-        );
+        throw new GrcError(`LLM 在生成${label}时返回了空内容。`, "LLM_FAILED");
       }
     }
 

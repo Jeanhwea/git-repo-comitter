@@ -16,7 +16,11 @@
 import { validateCommitMessage as validateMessage } from "@/domain/commit-message/checker";
 
 // —— 配置 ——
-export { loadDefaultConfig, loadUserConfigFile, resolveConfig } from "@/config/loader";
+export {
+  loadDefaultConfig,
+  loadUserConfigFile,
+  resolveConfig,
+} from "@/config/loader";
 export type { AppConfig, LLMConfig, UserConfig } from "@/config/types";
 
 // —— 提交流程 ——
@@ -64,7 +68,10 @@ export type ValidationResult =
   | { valid: true; value: string; warnings?: string[] }
   | { valid: false; reason?: string };
 
-/** 按 Conventional Commits 约束校验一条提交信息（规则见 docs/feat/F04）。 */
+/**
+ * 按 Conventional Commits 约束校验一条提交信息（规则见 docs/feat/F04）。
+ * @param content - 待校验的提交信息原文。
+ */
 export function validateCommitMessage(content: string): ValidationResult {
   return validateMessage(content);
 }

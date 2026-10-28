@@ -9,9 +9,9 @@ import { execGit } from "../runner";
 
 /**
  * 构造暂存区 diff 文本。
- * @param binaryFiles 变更集中被判定为二进制的文件路径
- * @param hasTextFiles 是否存在非二进制的文本文件变更
- * @param cwd 目标仓库路径，缺省为 process.cwd()
+ * @param binaryFiles - 变更集中被判定为二进制的文件路径
+ * @param hasTextFiles - 是否存在非二进制的文本文件变更
+ * @param cwd - 目标仓库路径，缺省为 process.cwd()
  */
 export function buildStagedDiff(
   binaryFiles: string[],

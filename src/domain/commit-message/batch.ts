@@ -39,7 +39,11 @@ export interface BatchResult {
   batchCount: number;
 }
 
-/** 为其中一个批次生成草稿，后续由合并阶段汇总成一条提交信息。 */
+/**
+ * 为其中一个批次生成草稿，后续由合并阶段汇总成一条提交信息。
+ * @param diffContent - 该批次的 diff 文本。
+ * @param config - 完整配置，用于估算 token 预算与调用 LLM。
+ */
 async function generateDraft(
   diffContent: string,
   config: AppConfig,
@@ -51,10 +55,7 @@ async function generateDraft(
   const t0 = performance.now();
   const content = await chatCompletion(config, messages);
   if (!content) {
-    throw new GrcError(
-      "LLM 在处理分批 diff 时返回了空内容。",
-      "LLM_FAILED",
-    );
+    throw new GrcError("LLM 在处理分批 diff 时返回了空内容。", "LLM_FAILED");
   }
   log.trace(
     `批次草稿生成完成，输出 ${content.length} 字符（耗时 ${formatElapsed(performance.now() - t0)}）`,

@@ -5,7 +5,10 @@
  * 两份重复胶水（I06 的 P8）。这里合并为同一模块对外提供两个语义清晰的函数。
  */
 
-/** 将毫秒数格式化为人类可读的中文时间字符串。 */
+/**
+ * 将毫秒数格式化为人类可读的中文时间字符串。
+ * @param ms - 耗时毫秒数；一分钟以上走分钟档，一秒以上走秒档。
+ */
 export function formatElapsed(ms: number): string {
   if (ms >= 60_000) {
     return `${(ms / 60_000).toFixed(2)} 分钟`;
@@ -16,7 +19,10 @@ export function formatElapsed(ms: number): string {
   return `${Math.round(ms)} 毫秒`;
 }
 
-/** 格式化当前时钟时间为 HH:MM:SS.mmm，供日志前缀使用。 */
+/**
+ * 格式化当前时钟时间为 HH:MM:SS.mmm，供日志前缀使用。
+ * @param date - 待格式化的时刻，缺省取当前时间。
+ */
 export function formatClockTime(date: Date = new Date()): string {
   const pad = (n: number, width = 2): string => String(n).padStart(width, "0");
   return (

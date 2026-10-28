@@ -12,7 +12,10 @@
  */
 import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
-import { type ReviewResult, reviewNewFiles } from "@/domain/file-review/reviewer";
+import {
+  type ReviewResult,
+  reviewNewFiles,
+} from "@/domain/file-review/reviewer";
 import {
   hasStagedChanges,
   hasUnstagedChanges,
@@ -31,7 +34,11 @@ import { formatElapsed } from "@/shared/time";
 
 const log = createLogger("commit");
 
-/** 按步骤记录耗时：统一「开始 / 完成」日志，避免每步重复取样。 */
+/**
+ * 按步骤记录耗时：统一「开始 / 完成」日志，避免每步重复取样。
+ * @param label - 步骤名，用于「开始 / 完成」两条日志。
+ * @param run - 被计时的步骤本体，同步或异步均可。
+ */
 async function measure<T>(
   label: string,
   run: () => Promise<T> | T,
@@ -86,7 +93,11 @@ export interface CommitRequest {
   onReview?: (result: ReviewResult) => boolean | Promise<boolean>;
 }
 
-/** 提交前把待提交内容放进暂存区：stagedOnly 时沿用已暂存内容，否则 git add 未暂存变更。 */
+/**
+ * 提交前把待提交内容放进暂存区：stagedOnly 时沿用已暂存内容，否则 git add 未暂存变更。
+ * @param stagedOnly - true 时沿用已暂存内容，false 时执行 git add。
+ * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
+ */
 function stageChanges(stagedOnly: boolean, cwd?: string): void {
   if (stagedOnly) {
     if (!hasStagedChanges(cwd)) {
@@ -107,6 +118,8 @@ function stageChanges(stagedOnly: boolean, cwd?: string): void {
 /**
  * 审查门禁：仅在调用方提供 onReview 时启用。
  * 库场景下「是否继续」必须由调用方决定，本模块不做任何终端提问。
+ * @param request - 提交请求，本门禁只消费其中的 config 与 onReview。
+ * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
  */
 async function runReviewGate(
   request: CommitRequest,
@@ -140,8 +153,8 @@ async function runReviewGate(
 
 /**
  * 执行一次完整的「生成提交信息并提交」流程。
- *
- * @throws {GrcError} 配置缺失、非 git 仓库、无暂存变更、审查否决、生成失败等
+ * @param request - 提交请求：配置、仓库路径、是否仅暂存、审查与进度回调。
+ * @throws GrcError 配置缺失、非 git 仓库、无暂存变更、审查否决、生成失败等
  */
 export async function executeCommit(
   request: CommitRequest,
@@ -156,7 +169,10 @@ export async function executeCommit(
     );
   }
 
-  log.trace("开始提交流程", { endpoint: config.endpoint, model: config.llm.model });
+  log.trace("开始提交流程", {
+    endpoint: config.endpoint,
+    model: config.llm.model,
+  });
 
   await measure("校验 git 仓库", () => {
     if (!isGitRepo(repoPath)) {
