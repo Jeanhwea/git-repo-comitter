@@ -1,9 +1,8 @@
 /**
  * git 执行器 —— Node 默认实现（child_process，F07）。
  *
- * 原 runner.ts 的 execFileSync 原语原样搬入本文件；全局参数、缓冲上限与
- * 失败处理策略保持不变。由 Node 入口（cli.ts / lib.ts）经 \@/node/setup 的
- * setupNodeGitExecutor 在加载时通过 setGitExecutor 装配。
+ * 由 Node 入口（cli.ts / lib.ts）经 \@/node/setup 的 setupNodeGitExecutor
+ * 在加载时通过 setGitExecutor 装配。
  *
  * 本文件是 Node 专有：浏览器 / WebView 入口不导入本模块（其 import 图不得出现
  * child_process），改由调用方注入 Tauri shell IPC 等实现。

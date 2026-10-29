@@ -1,3 +1,10 @@
+/**
+ * 单批生成提交信息的提示词定义。
+ *
+ * 面向完整 diff 一次成型的场景：把整份 diff 包进 <diff> 标记交给模型，
+ * 由 domain/commit-message/generator 直接调用。超预算时改走两段式流程：
+ * 先由 partial 逐批产出草稿，再由 merge 合并为唯一一条。
+ */
 import {
   MAX_BODY_BULLETS,
   MAX_BODY_LINE_LENGTH,

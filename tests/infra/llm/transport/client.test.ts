@@ -1,3 +1,7 @@
+/**
+ * infra/llm/transport/client 的单元测试：apiKey 缺失时的报错、
+ * 浏览器环境下 dangerouslyAllowBrowser 的放行探测，以及响应文本的提取。
+ */
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // 在被测模块导入前 mock openai，捕获构造 OpenAI 客户端时传入的配置。

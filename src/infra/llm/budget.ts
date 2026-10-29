@@ -1,9 +1,8 @@
 /**
  * LLM 基础设施 —— token 预算。
  *
- * 原先内联在 domain/commit-message/batch.ts（I06 的 P5）。
  * 预算计算取决于模型上下文容量与提示词开销，属基础设施职责；
- * 归入本模块后，领域编排只消费 effectiveLimit 的结果。
+ * 领域编排只消费 effectiveLimit 的结果，不自行估算 token。
  */
 import type { AppConfig } from "@/config/types";
 import { estimateTokens } from "@/shared/tokens";

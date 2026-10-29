@@ -1,11 +1,10 @@
-import { execGit } from "./executor";
-
 /**
  * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
- * 把原先堆在 diff.ts 里的变更采集逻辑迁至此，并以 ChangeSet 作为一等模型。
+ * 以 ChangeSet 作为一等模型，供 diff 组装层与审查门禁共享。
  *
  * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit(\{ repoPath \})）。
  */
+import { execGit } from "./executor";
 
 /**
  * 单个文件的变更类型。

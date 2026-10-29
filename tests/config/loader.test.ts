@@ -1,3 +1,7 @@
+/**
+ * config/loader 的单元测试：默认值的深拷贝隔离、clampLlm 对超限字段的收敛与报告，
+ * 以及 resolveConfig 的合并与回落策略。
+ */
 import { describe, expect, test } from "vitest";
 
 import {

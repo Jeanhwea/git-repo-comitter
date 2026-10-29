@@ -1,11 +1,10 @@
-import { execGit } from "../executor";
-
 /**
  * 文件 diff 模块 —— 文本组装层。
  *
  * 负责把「暂存区文本 diff」与「二进制文件名清单段」拼成一份可喂给 LLM 的文本：
  * 二进制清单由调用方（index.ts）基于变更集给出，本层只做组装，不做变更判定。
  */
+import { execGit } from "../executor";
 
 /**
  * 构造暂存区 diff 文本。

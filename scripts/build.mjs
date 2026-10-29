@@ -3,8 +3,7 @@
  * 统一构建编排脚本（F05 / F07）。
  *
  * package.json 的 `build` 脚本已指向本文件（node scripts/build.mjs）。
- * 本脚本把原本串成一行的构建命令拆成可按目标独立执行的子任务，
- * 顺序与依赖关系与原 build 保持一致：
+ * 构建被拆成可按目标独立执行的子任务，顺序与依赖关系如下：
  *
  *   check    tsc --noEmit              类型检查（最先，失败即停）
  *   lib      vite build                库构建（ESM + CJS），会清空 dist

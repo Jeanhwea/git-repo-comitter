@@ -1,6 +1,5 @@
 /**
  * 标题/格式公共规则（提交类三套提示词共用，单一来源）。
- * 从原 prompts.ts 中抽取，消除 SYSTEM / PARTIAL / MERGE 三处重复（对应 I04 的 P1）。
  *
  * 行宽上限取自 shared/commit-limits，与校验器共用同一组数字，避免提示词与校验口径不一致。
  */

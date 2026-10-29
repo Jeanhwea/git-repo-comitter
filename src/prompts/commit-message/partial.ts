@@ -1,3 +1,9 @@
+/**
+ * 分批场景下的单批草稿提示词定义。
+ *
+ * 大 diff 被切成多批后，每批单独调用本提示词产出一条草稿，
+ * 再由 mergeCommitPrompt 合并为唯一一条提交信息。
+ */
 import {
   MAX_BODY_BULLETS,
   MAX_BODY_LINE_LENGTH,
