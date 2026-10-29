@@ -29,7 +29,10 @@ function normalizeLevel(raw: string | undefined): LogLevel {
 
 let currentLevel: LogLevel = normalizeLevel(process.env.GRC_LOG_LEVEL);
 
-/** 运行时调整日志级别（CLI 选项在解析后调用）。 */
+/**
+ * 运行时调整日志级别（CLI 选项在解析后调用）。
+ * @param level - 目标日志级别，低于它的记录不会被输出。
+ */
 export function setLogLevel(level: LogLevel): void {
   currentLevel = level;
 }
@@ -51,9 +54,37 @@ export interface Logger {
   error: (msg: string, ...args: unknown[]) => void;
 }
 
+/** 一条日志的完整上下文，供自定义输出槽消费。 */
+export interface LogRecord {
+  level: LogLevel;
+  namespace: string;
+  message: string;
+  args: unknown[];
+  /** 已格式化好的单行文本，等价于默认 console 输出的内容。 */
+  text: string;
+}
+
+/**
+ * 日志输出槽。
+ * F05：库被其他代码调用时，调用方常需接管或静默诊断日志，
+ * 因此默认 console 行为可被注入的槽替换（传 null 即恢复默认）。
+ */
+export type LogSink = (record: LogRecord) => void;
+
+let currentSink: LogSink | null = null;
+
+/**
+ * 注入日志输出槽；传 null 恢复默认 console 行为。
+ * @param sink - 目标输出槽；传 null 表示恢复默认 console 行为。
+ */
+export function setLogSink(sink: LogSink | null): void {
+  currentSink = sink;
+}
+
 /**
  * 创建一个带命名空间（namespace）的日志器。
  * 命名空间用于在追溯日志时区分来源，例如 commit / llm / batch / git。
+ * @param namespace - 日志来源标识，会作为前缀出现在每条日志里。
  */
 export function createLogger(namespace: string): Logger {
   const prefix = (level: LogLevel): string => {
@@ -66,6 +97,10 @@ export function createLogger(namespace: string): Logger {
     const line = `${prefix(level)} ${msg}`;
     const text =
       args.length > 0 ? `${line} ${args.map(formatArg).join(" ")}` : line;
+    if (currentSink) {
+      currentSink({ level, namespace, message: msg, args, text });
+      return;
+    }
     if (level === "error" || level === "warn") {
       console.error(text);
     } else {

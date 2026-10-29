@@ -1,17 +1,20 @@
 /**
  * 应用层 —— init 命令：交互式写入 LLM 配置。
  */
+import { question } from "@/app/cli/input";
 import {
   DEFAULT_CONFIG,
-  loadUserConfig,
+  loadUserConfigFile,
   saveUserConfig,
 } from "@/config/loader";
 import { CliError } from "@/shared/errors";
-import { question } from "@/shared/input";
 
 /**
  * 带默认值的提问：括号内展示当前值（或占位提示），直接回车即沿用默认值。
  * hint 与 fallback 分开，便于敏感字段（如 API Key）展示掩码而沿用真实值。
+ * @param label - 提问时显示的字段名（如「模型名称」）。
+ * @param hint - 方括号内展示的当前值或掩码提示。
+ * @param fallback - 用户直接回车时采用的真实值。
  */
 async function ask(
   label: string,
@@ -25,7 +28,7 @@ async function ask(
 export async function runInit(): Promise<void> {
   console.log("LLM 配置初始化\n");
 
-  const existing = loadUserConfig();
+  const existing = loadUserConfigFile();
 
   const defaultEndpoint = existing.endpoint || DEFAULT_CONFIG.endpoint;
   const defaultModel = existing.llm?.model || DEFAULT_CONFIG.llm.model;

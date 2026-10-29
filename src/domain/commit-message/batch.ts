@@ -23,7 +23,9 @@ import {
   wrapDraft,
   wrapPartialDiff,
 } from "@/prompts";
+import { GrcError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
+import { emitProgress } from "@/shared/progress";
 import { formatElapsed } from "@/shared/time";
 import { estimateTokens } from "@/shared/tokens";
 
@@ -37,7 +39,11 @@ export interface BatchResult {
   batchCount: number;
 }
 
-/** 为其中一个批次生成草稿，后续由合并阶段汇总成一条提交信息。 */
+/**
+ * 为其中一个批次生成草稿，后续由合并阶段汇总成一条提交信息。
+ * @param diffContent - 该批次的 diff 文本。
+ * @param config - 完整配置，用于估算 token 预算与调用 LLM。
+ */
 async function generateDraft(
   diffContent: string,
   config: AppConfig,
@@ -49,7 +55,7 @@ async function generateDraft(
   const t0 = performance.now();
   const content = await chatCompletion(config, messages);
   if (!content) {
-    throw new Error("LLM 在处理分批 diff 时返回了空内容。");
+    throw new GrcError("LLM 在处理分批 diff 时返回了空内容。", "LLM_FAILED");
   }
   log.trace(
     `批次草稿生成完成，输出 ${content.length} 字符（耗时 ${formatElapsed(performance.now() - t0)}）`,
@@ -83,27 +89,28 @@ export async function generateCommitMessageBatched(
   const batches = groupIntoBatches(blocks, limit);
   log.debug(`拆分为 ${batches.length} 个批次（按 token 上限切分）`);
 
-  console.log(
+  emitProgress(
     `  变更内容较大（约 ${diffTokens} tokens），将分为 ${batches.length} 批次处理...`,
   );
 
   const drafts: string[] = [];
-  for (let i = 0; i < batches.length; i++) {
-    console.log(`  正在处理第 ${i + 1}/${batches.length} 批次...`);
-    const draft = await generateDraft(batches[i].content, config);
+  for (const [i, batch] of batches.entries()) {
+    emitProgress(`  正在处理第 ${i + 1}/${batches.length} 批次...`);
+    const draft = await generateDraft(batch.content, config);
     drafts.push(draft);
   }
 
-  console.log(`  正在合并 ${batches.length} 个批次的提交信息...`);
+  emitProgress(`  正在合并 ${batches.length} 个批次的提交信息...`);
   const { kept, omitted } = fitWithinBudget(
     drafts.map((draft, i) => wrapDraft(i + 1, draft)),
     effectiveLimit(config, mergeCommitPrompt.system),
   );
 
   if (kept.length === 0) {
-    throw new Error(
+    throw new GrcError(
       `合并信息的内存不足：LLM 上下文容量 (${config.llm.maxInputTokens} tokens) 不足以容纳任何一条草稿，` +
         `请增大 maxInputTokens 或选择更大上下文的模型。`,
+      "LLM_FAILED",
     );
   }
 

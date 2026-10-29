@@ -22,7 +22,10 @@ interface LlmChatResponse {
   choices: LlmChoice[];
 }
 
-/** 取首个 choice 的文本；content 为多段时只拼接 text 段。 */
+/**
+ * 取首个 choice 的文本；content 为多段时只拼接 text 段。
+ * @param response - LLM 原始响应对象或未经解析的 JSON 字符串。
+ */
 export function extractContent(response: LlmChatResponse | string): string {
   const data = typeof response === "string" ? JSON.parse(response) : response;
   const content = data.choices?.[0]?.message?.content;

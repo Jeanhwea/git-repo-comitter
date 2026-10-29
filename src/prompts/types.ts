@@ -21,7 +21,9 @@ export interface PromptDefinition<TInput = void> {
 
 /**
  * 统一消息组装：消除 generator / batch / reviewer 里重复的
- * [{ role: "system" }, { role: "user" }] 样板。
+ * system + user 两条消息的样板代码。
+ * @param p - 提示词定义，提供系统提示词与可选的 user 消息构造器。
+ * @param data - 构造 user 消息所需的业务数据。
  */
 export function buildMessages<TInput>(
   p: PromptDefinition<TInput>,

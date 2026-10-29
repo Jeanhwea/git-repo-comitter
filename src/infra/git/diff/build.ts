@@ -9,15 +9,17 @@ import { execGit } from "../runner";
 
 /**
  * 构造暂存区 diff 文本。
- * @param binaryFiles 变更集中被判定为二进制的文件路径
- * @param hasTextFiles 是否存在非二进制的文本文件变更
+ * @param binaryFiles - 变更集中被判定为二进制的文件路径
+ * @param hasTextFiles - 是否存在非二进制的文本文件变更
+ * @param cwd - 目标仓库路径，缺省为 process.cwd()
  */
 export function buildStagedDiff(
   binaryFiles: string[],
   hasTextFiles: boolean,
+  cwd?: string,
 ): string {
   if (binaryFiles.length === 0) {
-    return execGit(["diff", "--cached"], { allowFailure: true });
+    return execGit(["diff", "--cached"], { allowFailure: true, cwd });
   }
 
   let diff = "";
@@ -27,9 +29,9 @@ export function buildStagedDiff(
     for (const file of binaryFiles) {
       args.push(`:(exclude,top)${file}`);
     }
-    diff = execGit(args, { allowFailure: true });
+    diff = execGit(args, { allowFailure: true, cwd });
     if (!diff.trim()) {
-      diff = execGit(["diff", "--cached"], { allowFailure: true });
+      diff = execGit(["diff", "--cached"], { allowFailure: true, cwd });
     }
   }
 
