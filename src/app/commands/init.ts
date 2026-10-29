@@ -2,11 +2,8 @@
  * 应用层 —— init 命令：交互式写入 LLM 配置。
  */
 import { question } from "@/app/cli/input";
-import {
-  DEFAULT_CONFIG,
-  loadUserConfigFile,
-  saveUserConfig,
-} from "@/config/loader";
+import { DEFAULT_CONFIG } from "@/config/loader";
+import { loadUserConfigFile, saveUserConfig } from "@/config/user-file";
 import { CliError } from "@/shared/errors";
 
 /**

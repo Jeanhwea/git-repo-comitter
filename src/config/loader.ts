@@ -1,30 +1,17 @@
 /**
- * 配置层 —— 默认值、加载、校验收敛与持久化。
+ * 配置层 —— 默认值、加载、校验收敛（纯函数，F07）。
  *
- * 由 infra/config 迁出（I06 的 P3）；交互问答改用 shared/input 的 question()，
- * 删除原先内联的 createInterface 实现（I06 的 P7）。
+ * 文件读写（fs / os / path）已下沉到 config/user-file.ts，使本模块零环境依赖，
+ * 可在浏览器端复用（resolveConfig / loadDefaultConfig 被浏览器入口直接导出）。
  *
  * F05：抽库后配置必须可注入，且默认不得产生「读全局文件 + 终端提问」的副作用：
  * - `resolveConfig()`      纯函数：默认值 + 覆盖值，静默收敛，不读写文件、不交互；
- * - `loadUserConfigFile()` 读取 ~/.grc/config.json，供 CLI 或主动选择的调用方使用；
  * - `clampLlm()`           按模型上限收敛，只计算不告警，供调用方决定如何提示。
  *
- * 架构 A5：配置层只做「数据 + 文件」，不含终端交互、不直接 console 输出。
+ * 架构 A5：配置层只做「数据」，不含终端交互、不直接 console 输出。
  * CLI 的告警与交互式修复上移到 app/config/load.ts。
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { homedir } from "os";
-import { resolve } from "path";
-
-import { createLogger } from "@/shared/logger";
-
-import { type AppConfig, type LLMConfig, type UserConfig } from "./types";
-
-const log = createLogger("config");
-
-/** 配置目录 ~/.grc，配置文件位于其下的 config.json。 */
-const CONFIG_DIR = resolve(homedir(), ".grc");
-const USER_CONFIG_PATH = resolve(CONFIG_DIR, "config.json");
+import type { AppConfig, LLMConfig, UserConfig } from "./types";
 
 export const DEFAULT_CONFIG: AppConfig = {
   llm: {
@@ -36,41 +23,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   apiKey: "",
   endpoint: "https://api.openai.com/v1",
 };
-
-const isPlainObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-/**
- * 读取用户配置文件 ~/.grc/config.json；文件不存在或解析失败时返回空配置。
- *
- * 解析异常只记 debug 日志：库调用方不应看到意外输出，需要提示的 CLI 可自行开日志级别。
- */
-export function loadUserConfigFile(): UserConfig {
-  if (!existsSync(USER_CONFIG_PATH)) return {};
-  try {
-    const parsed: unknown = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf-8"));
-    if (!isPlainObject(parsed)) {
-      log.debug(`${USER_CONFIG_PATH} 的内容不是 JSON 对象，已忽略用户配置。`);
-      return {};
-    }
-    return {
-      ...(parsed as UserConfig),
-      llm: isPlainObject(parsed.llm)
-        ? { ...(parsed.llm as Partial<LLMConfig>) }
-        : undefined,
-    };
-  } catch (err) {
-    log.debug(
-      `解析 ${USER_CONFIG_PATH} 失败，已忽略用户配置。原因：${err instanceof Error ? err.message : String(err)}`,
-    );
-    return {};
-  }
-}
-
-export function saveUserConfig(config: UserConfig): void {
-  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
-}
 
 /** 返回一份内置默认配置的深拷贝，供调用方在其基础上覆盖字段。 */
 export function loadDefaultConfig(): AppConfig {
