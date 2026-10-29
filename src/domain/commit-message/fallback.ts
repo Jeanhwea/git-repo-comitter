@@ -39,6 +39,7 @@ const log = createLogger("fallback");
  *  7. 新增/修改 .json / .yaml / .yml / config/ 配置相关 → build
  *  8. 修改文件名含 refactor → refactor
  *  9. 兜底 → chore
+ * @param files - 文件变更列表，用于推断 type
  */
 function inferType(files: FileChange[]): string {
   const added = files.filter((f) => f.status === "added");
@@ -244,6 +245,7 @@ function buildBody(files: FileChange[]): string {
 /**
  * 对 description 部分做硬截断以保证整个 header 不超过 MAX_HEADER_LENGTH。
  * 截断位置尽量选择词边界，并在末尾追加省略号。
+ * @param header - 待截断的 header 字符串
  */
 function truncateHeader(header: string): string {
   if (header.length <= MAX_HEADER_LENGTH) return header;
@@ -258,7 +260,6 @@ function truncateHeader(header: string): string {
 /**
  * 规则化生成一条合规的 Conventional Commits 提交消息。
  * 不需要 LLM，完全基于 ChangeSet 的文件变更特征推断。
- *
  * @param changeSet - 暂存区变更集（来自 getStagedChangeSet）。
  * @returns 合规的提交消息字符串。
  */
