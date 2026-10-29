@@ -31,14 +31,19 @@ console.log("[INFO] Building...");
 if (run("pnpm", ["build"]) !== 0) process.exit(1);
 
 // 2. 打包（捕获 stdout 拿到 tarball 文件名）
+// 注意：必须 shell:true，否则 Windows 下 Node 直接找 `npm` 而非 `npm.cmd` 会 ENOENT。
 console.log("[INFO] Packing...");
 const packRes = spawnSync("npm", ["pack"], {
   cwd: root,
   encoding: "utf-8",
-  stdio: ["ignore", "pipe", "inherit"],
+  shell: true,
+  stdio: ["ignore", "pipe", "pipe"],
 });
 if (packRes.status !== 0) {
   console.error("[ERROR] npm pack failed");
+  if (packRes.error) console.error("  reason:", packRes.error.message);
+  const out = [packRes.stdout, packRes.stderr].filter(Boolean).join("\n").trim();
+  if (out) console.error(out);
   process.exit(1);
 }
 const tgzRaw = (packRes.stdout || "")
