@@ -262,7 +262,9 @@ export async function executeCommit(
     }
 
     if (isFallback) {
-      emitProgress("  (提示：降级消息缺乏语义分析，可通过 git commit --amend 手动编辑)\n");
+      emitProgress(
+        "  (提示：降级消息缺乏语义分析，可通过 git commit --amend 手动编辑)\n",
+      );
     }
 
     await measure("执行 git commit", () => gitCommit(message, repoPath));

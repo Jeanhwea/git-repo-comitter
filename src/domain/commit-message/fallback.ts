@@ -48,9 +48,7 @@ function inferType(files: FileChange[]): string {
   const allFiles = files.map((f) => f.path);
 
   // 1. test
-  if (
-    added.some((f) => /\.(spec|test)\.(ts|tsx|js|jsx)$/i.test(f.path))
-  ) {
+  if (added.some((f) => /\.(spec|test)\.(ts|tsx|js|jsx)$/i.test(f.path))) {
     return "test";
   }
 
@@ -214,7 +212,9 @@ function buildBody(files: FileChange[]): string {
   if (byStatus["modified"]!.length > 0) {
     lines.push("- 修改文件：");
     for (const f of byStatus["modified"]!) {
-      const meta = f.isBinary ? " [二进制]" : ` (+${f.additions}/-${f.deletions})`;
+      const meta = f.isBinary
+        ? " [二进制]"
+        : ` (+${f.additions}/-${f.deletions})`;
       lines.push(`  - ${f.path}${meta}`);
     }
   }
@@ -304,10 +304,14 @@ export function generateFallbackMessage(changeSet: ChangeSet): string {
     const lines = message.split("\n");
     const headerLine = lines[0] ?? "";
     const bodyLinesCheck = lines.slice(2); // after header + blank line
-    const bulletLines = bodyLinesCheck.filter((l) => l.startsWith("- ") || l.startsWith("  - "));
+    const bulletLines = bodyLinesCheck.filter(
+      (l) => l.startsWith("- ") || l.startsWith("  - "),
+    );
     if (bulletLines.length > MAX_BODY_BULLETS * 2) {
       // 把 file count 降低到 MAX_BODY_BULLETS 级
-      const truncatedBody = bodyLinesCheck.slice(0, MAX_BODY_BULLETS * 2).join("\n");
+      const truncatedBody = bodyLinesCheck
+        .slice(0, MAX_BODY_BULLETS * 2)
+        .join("\n");
       const corrected = `${headerLine}\n\n${truncatedBody}`;
       return corrected;
     }

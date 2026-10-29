@@ -6,11 +6,7 @@
  * 库调用方使用 config/loader 的 resolveConfig / loadDefaultConfig，不经过这里。
  */
 import { question } from "@/app/cli/input";
-import {
-  DEFAULT_CONFIG,
-  clampLlm,
-  resolveConfig,
-} from "@/config/loader";
+import { DEFAULT_CONFIG, clampLlm, resolveConfig } from "@/config/loader";
 import type { AppConfig } from "@/config/types";
 import { loadUserConfigFile, saveUserConfig } from "@/config/user-file";
 
