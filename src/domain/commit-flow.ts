@@ -12,11 +12,13 @@
  */
 import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
+import { generateFallbackMessage } from "@/domain/commit-message/fallback";
 import {
   type ReviewResult,
   reviewNewFiles,
 } from "@/domain/file-review/reviewer";
 import {
+  getStagedChangeSet,
   hasStagedChanges,
   hasUnstagedChanges,
   readNewFileContents,
@@ -152,6 +154,21 @@ async function runReviewGate(
 }
 
 /**
+ * P1 / P2 共用辅助函数：通过规则化方式生成兜底提交消息并执行 git commit。
+ * 抽取为独立函数以避免两处入口重复 `getStagedChangeSet + generateFallbackMessage + gitCommit`。
+ * @param repoPath - 目标仓库路径。
+ * @returns 兜底生成的提交消息。
+ */
+function tryFallback(repoPath?: string): {
+  isFallback: true;
+  message: string;
+} {
+  const changeSet = getStagedChangeSet(repoPath);
+  const message = generateFallbackMessage(changeSet);
+  return { isFallback: true, message };
+}
+
+/**
  * 执行一次完整的「生成提交信息并提交」流程。
  * @param request - 提交请求：配置、仓库路径、是否仅暂存、审查与进度回调。
  * @throws GrcError 配置缺失、非 git 仓库、无暂存变更、审查否决、生成失败等
@@ -162,11 +179,17 @@ export async function executeCommit(
   const { config, repoPath, stagedOnly } = request;
   const startTime = performance.now();
 
+  // P1：apiKey 为空时走兜底——不抛异常，规则化生成提交消息
   if (!config.apiKey) {
-    throw new GrcError(
-      "API Key 未设置，请传入 config.apiKey 或运行 `grc init` 进行配置。",
-      "CONFIG_MISSING",
+    emitProgress("未配置 LLM，使用规则化模式生成提交信息...\n");
+    emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
+    const { message } = await measure("生成提交信息（兜底）", () =>
+      tryFallback(repoPath),
     );
+    await measure("执行 git commit", () => gitCommit(message, repoPath));
+    const elapsedMs = performance.now() - startTime;
+    log.debug(`全流程完成（兜底模式），总耗时 ${formatElapsed(elapsedMs)}`);
+    return { committed: true, message, batchCount: 1, elapsedMs };
   }
 
   log.trace("开始提交流程", {
@@ -208,11 +231,38 @@ export async function executeCommit(
     log.trace(`暂存 diff 提取完成，长度 ${diff.length} 字符`);
 
     emitProgress("正在生成提交信息...\n");
-    const { message, batchCount } = await measure("生成提交信息", () =>
-      generateCommitMessageBatched(diff, config),
-    );
-    if (batchCount > 1) {
-      emitProgress(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
+    let message: string;
+    let batchCount = 1;
+    let isFallback = false;
+    try {
+      const result = await measure("生成提交信息", () =>
+        generateCommitMessageBatched(diff, config),
+      );
+      message = result.message;
+      batchCount = result.batchCount;
+      if (batchCount > 1) {
+        emitProgress(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
+      }
+    } catch (err) {
+      // P2：LLM 调用失败后走兜底——捕获 VALIDATION_FAILED / LLM_FAILED
+      if (
+        err instanceof GrcError &&
+        (err.code === "VALIDATION_FAILED" || err.code === "LLM_FAILED")
+      ) {
+        emitProgress("LLM 生成失败，降级为规则化模式...\n");
+        emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
+        const fallback = await measure("生成提交信息（降级兜底）", () =>
+          tryFallback(repoPath),
+        );
+        message = fallback.message;
+        isFallback = true;
+      } else {
+        throw err;
+      }
+    }
+
+    if (isFallback) {
+      emitProgress("  (提示：降级消息缺乏语义分析，可通过 git commit --amend 手动编辑)\n");
     }
 
     await measure("执行 git commit", () => gitCommit(message, repoPath));
