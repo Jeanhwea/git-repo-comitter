@@ -14,12 +14,11 @@
  */
 
 import { validateCommitMessage as validateMessage } from "@/domain/commit-message/checker";
-import { setGitExecutor } from "@/infra/git/executor";
-import { childProcessExecutor } from "@/node/git/child-process-executor";
+import { setupNodeGitExecutor } from "@/node/setup";
 
 // Node 入口：自动装配基于 child_process 的默认 git 执行器（F07）。
 // 浏览器 / WebView 入口不装配，由调用方通过 setGitExecutor 注入实现。
-setGitExecutor(childProcessExecutor);
+setupNodeGitExecutor();
 
 // —— 配置 ——
 export { loadDefaultConfig, resolveConfig } from "@/config/loader";
