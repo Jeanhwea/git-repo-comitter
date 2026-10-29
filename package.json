@@ -26,8 +26,6 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "fmt": "fmt.cmd",
-    "ins": "ins.cmd",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "check": "tsc --noEmit",
