@@ -23,9 +23,14 @@ function createClient(config: AppConfig): OpenAI {
       "CONFIG_MISSING",
     );
   }
+  // 浏览器探测：Tauri WebView / Next.js 浏览器端 window + document 同时存在，
+  // 此时必须显式放行，否则 openai SDK 拒绝在浏览器构造客户端（F07 G3）。
+  const isBrowser =
+    typeof window !== "undefined" && typeof document !== "undefined";
   return new OpenAI({
     apiKey: config.apiKey,
     baseURL: config.endpoint,
+    dangerouslyAllowBrowser: isBrowser,
   });
 }
 

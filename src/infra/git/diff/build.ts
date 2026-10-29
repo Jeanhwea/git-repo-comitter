@@ -1,4 +1,4 @@
-import { execGit } from "../runner";
+import { execGit } from "../executor";
 
 /**
  * 文件 diff 模块 —— 文本组装层。

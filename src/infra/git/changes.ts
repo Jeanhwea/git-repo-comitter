@@ -1,4 +1,4 @@
-import { execGit } from "./runner";
+import { execGit } from "./executor";
 
 /**
  * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。

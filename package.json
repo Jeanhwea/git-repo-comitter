@@ -11,6 +11,10 @@
       "types": "./dist/types/lib.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./browser": {
+      "types": "./dist/types/lib-browser.d.ts",
+      "import": "./dist/browser/index.js"
     }
   },
   "bin": {
@@ -21,10 +25,14 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc --noEmit && vite build && vite build --config vite.cli.config.ts && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+    "build": "node scripts/build.mjs",
+    "fmt": "node scripts/fmt.mjs",
+    "ins": "node scripts/ins.mjs",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "prepare": "husky"
@@ -73,7 +81,8 @@
     "prettier": "^3.9.5",
     "tsc-alias": "^1.9.9",
     "typescript": "^6.0.3",
-    "vite": "^8.1.4"
+    "vite": "^8.1.4",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "commander": "^15.0.0",

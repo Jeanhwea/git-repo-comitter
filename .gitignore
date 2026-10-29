@@ -1,5 +1,8 @@
 node_modules/
 .workbuddy/
+.trae/
+.vscode/
+.workbuddy/
 dist/
 .env
 *.log

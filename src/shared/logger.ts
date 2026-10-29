@@ -27,7 +27,9 @@ function normalizeLevel(raw: string | undefined): LogLevel {
   return "info";
 }
 
-let currentLevel: LogLevel = normalizeLevel(process.env.GRC_LOG_LEVEL);
+let currentLevel: LogLevel = normalizeLevel(
+  typeof process !== "undefined" ? process.env?.GRC_LOG_LEVEL : undefined,
+);
 
 /**
  * 运行时调整日志级别（CLI 选项在解析后调用）。
