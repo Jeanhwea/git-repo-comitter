@@ -1,3 +1,9 @@
+/**
+ * 分批草稿合并的提示词定义。
+ *
+ * 接收 partial 阶段产出的多条草稿（含因长度限制丢弃批次时的 notice 提示），
+ * 合并为一条符合 Conventional Commits 的最终提交信息。
+ */
 import {
   MAX_BODY_BULLETS,
   MAX_BODY_LINE_LENGTH,

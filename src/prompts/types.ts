@@ -1,3 +1,9 @@
+/**
+ * 提示词模块的类型定义。
+ *
+ * PromptDefinition 把「系统提示词文本 + user 消息构造 + 失败修复提示」收拢为一个对象，
+ * 由 buildMessages 统一消费，使调用方不必各自拼装消息数组。
+ */
 import type OpenAI from "openai";
 
 type ChatMessage = OpenAI.ChatCompletionMessageParam;

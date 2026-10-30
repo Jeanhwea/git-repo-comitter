@@ -1,3 +1,7 @@
+/**
+ * shared/logger 的单元测试：分级方法、日志槽对记录（含命名空间与参数）的捕获，
+ * 以及低于当前级别的日志被静默丢弃。
+ */
 import { afterEach, describe, expect, test } from "vitest";
 
 import {

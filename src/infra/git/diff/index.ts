@@ -1,3 +1,9 @@
+/**
+ * 文件 diff 模块的统一出口。
+ *
+ * 对外暴露 getStagedDiff（可直接喂给 LLM 的暂存区 diff）：文本组装委托 build 层，
+ * 分块与折叠委托 split 层，二进制清单取自 changes 模块的变更集，保证 diff 与 change 同源。
+ */
 import { getStagedChangeSet } from "../changes";
 
 import { buildStagedDiff } from "./build";

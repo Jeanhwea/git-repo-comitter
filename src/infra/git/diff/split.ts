@@ -1,9 +1,10 @@
-import { estimateTokens } from "@/shared/tokens";
-
 /**
  * 文件 diff 模块 —— 分块层。
- * 从 domain/commit-message/split.ts 迁入：按文件把 diff 切成块、对超大块折叠、再按 token 上限分组。
+ *
+ * 按文件把 diff 切成块、折叠超出 token 预算的巨型块、再按上限分组为批次，
+ * 使超长变更能以多批次方式喂给 LLM 而不撑爆上下文。
  */
+import { estimateTokens } from "@/shared/tokens";
 
 interface DiffBlock {
   filePath: string;

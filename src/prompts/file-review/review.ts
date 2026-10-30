@@ -1,3 +1,9 @@
+/**
+ * 提交前新增文件审查的提示词定义。
+ *
+ * 逐个审查新增文件内容，判断是否存在不应提交到仓库的内容（密钥、凭据等），
+ * 并按 JSON Schema 输出可被程序直接解析的结论；结论决定是否中断本次提交。
+ */
 import { LANGUAGE_RULES } from "../blocks/language";
 import { REVIEW_ROLE } from "../blocks/role";
 import type { PromptDefinition } from "../types";

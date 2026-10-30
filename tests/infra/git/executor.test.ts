@@ -1,3 +1,7 @@
+/**
+ * infra/git/executor 的单元测试：未装配执行器时的失败行为、注入实现的委托与选项透传，
+ * 以及不同实现之间的热替换。
+ */
 import { describe, expect, test, vi } from "vitest";
 
 import { GrcError } from "@/shared/errors";
