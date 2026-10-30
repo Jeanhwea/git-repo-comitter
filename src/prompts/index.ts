@@ -13,7 +13,6 @@ export * from "./blocks/format";
 export * from "./blocks/safety";
 export * from "./blocks/language";
 export * from "./blocks/output";
-export * from "./repair";
 export * from "./commit-message/generate";
 export * from "./commit-message/partial";
 export * from "./commit-message/merge";
