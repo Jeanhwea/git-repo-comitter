@@ -81,9 +81,6 @@ function inferType(files: FileChange[]): string {
   }
 
   // 6. modified only → fix
-  if (modified.length > modified.length) {
-    // unreachable unless modified > 0
-  }
   if (modified.length > 0 && added.length === 0) {
     return "fix";
   }
