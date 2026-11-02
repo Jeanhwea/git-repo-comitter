@@ -91,6 +91,10 @@ program.action((options: CliOptions) => {
   runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
 });
 
-export function runCli(): void {
-  program.parse(process.argv);
+/**
+ * 解析并执行命令行程序。
+ * @param argv - 命令行参数；缺省回落到 process.argv，便于嵌入与测试注入。
+ */
+export function runCli(argv: string[] = process.argv): void {
+  program.parse(argv);
 }
