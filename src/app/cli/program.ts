@@ -31,6 +31,7 @@ const EXIT_CODES: Record<GrcErrorCode, number> = {
   USER_CANCELLED: 1,
   VALIDATION_FAILED: 1,
   LLM_FAILED: 1,
+  RATE_LIMITED: 1,
   GIT_FAILED: 1,
   UNKNOWN: 1,
 };
