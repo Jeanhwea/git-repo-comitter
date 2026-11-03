@@ -22,6 +22,7 @@ export type GrcErrorCode =
   | "USER_CANCELLED" // 审查门禁被用户/调用方否决
   | "VALIDATION_FAILED" // 生成结果未通过格式校验且重试耗尽
   | "LLM_FAILED" // 大模型调用失败或返回空内容
+  | "RATE_LIMITED" // 请求被限流（429），退避重试后仍失败
   | "GIT_FAILED" // git 命令执行失败
   | "UNKNOWN";
 
