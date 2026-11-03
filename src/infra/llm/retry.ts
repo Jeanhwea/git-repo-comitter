@@ -52,6 +52,8 @@ export interface TransportErrorInfo {
 /**
  * 分类一次传输层异常：判断是否需要退避重试以及冷却时长。
  * 仅做鸭子类型判断（status / headers），不依赖 openai 的具体类型，便于测试与抽库。
+ * @param err - 待分类的传输层异常。
+ * @returns 分类结论（是否可重试 / 是否限流 / 建议冷却毫秒）。
  */
 export function classifyTransportError(err: unknown): TransportErrorInfo {
   const status = httpStatusOf(err);
@@ -73,6 +75,11 @@ export function classifyTransportError(err: unknown): TransportErrorInfo {
   return { retryable: false, rateLimited: false };
 }
 
+/**
+ * 从异常对象中读取 HTTP 状态码（鸭子类型，兼容 openai 的 APIError）。
+ * @param err - 待检查的错误对象。
+ * @returns 状态码数字；无法识别时返回 undefined。
+ */
 function httpStatusOf(err: unknown): number | undefined {
   if (err && typeof err === "object" && "status" in err) {
     const s = (err as { status?: unknown }).status;
@@ -81,6 +88,11 @@ function httpStatusOf(err: unknown): number | undefined {
   return undefined;
 }
 
+/**
+ * 从异常头部解析 Retry-After（秒），并封顶到最大冷却时长。
+ * @param err - 携带 headers 的错误对象。
+ * @returns 冷却毫秒数；无 Retry-After 或解析失败时返回 undefined。
+ */
 function retryAfterMsOf(err: unknown): number | undefined {
   const headers = (err as { headers?: unknown })?.headers;
   if (!headers) return undefined;
@@ -99,10 +111,19 @@ function retryAfterMsOf(err: unknown): number | undefined {
   return Math.min(secs, RATE_LIMIT_MAX_DELAY_MS / 1000) * 1000;
 }
 
+/**
+ * 等待指定毫秒数。
+ * @param ms - 需要睡眠的毫秒数。
+ */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * 计算第 attempt 次限流重试的指数退避时长（带封顶）。
+ * @param attempt - 当前限流重试次数（从 1 开始）。
+ * @returns 退避毫秒数。
+ */
 function backoffMs(attempt: number): number {
   return Math.min(
     RATE_LIMIT_BASE_DELAY_MS * 2 ** (attempt - 1),
@@ -113,6 +134,11 @@ function backoffMs(attempt: number): number {
 /**
  * 带限流退避的传输层调用：命中 429/5xx 时按 Retry-After / 指数退避重试，
  * 重试耗尽后：429 抛 RATE_LIMITED，其余原样上抛。
+ * @param config - 应用配置。
+ * @param messages - 发送给模型的消息列表。
+ * @param temperatureOverride - 覆盖的采样温度；缺省回落到配置值。
+ * @param label - 当前生成内容的标签（用于错误与日志）。
+ * @returns 模型返回的文本内容。
  */
 async function callWithRateLimitRetry(
   config: AppConfig,
