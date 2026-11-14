@@ -15,6 +15,8 @@ const log = createLogger("commit");
 
 export interface CommitOptions {
   stagedOnly?: boolean;
+  /** true 时跳过 Git Hook（F09）。 */
+  noVerify?: boolean;
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
@@ -34,6 +36,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
   const outcome = await executeCommit({
     config,
     stagedOnly: options.stagedOnly ?? false,
+    noVerify: options.noVerify ?? false,
     onProgress: (message) => console.log(message),
     onReview: createCliReviewHandler(),
   });

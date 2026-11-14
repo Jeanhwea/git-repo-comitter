@@ -21,6 +21,19 @@ export function gitAddAll(cwd?: string): void {
   execGit(["add", "."], { cwd });
 }
 
-export function gitCommit(message: string, cwd?: string): void {
-  execGit(["commit", "-m", message], { cwd });
+/**
+ * 执行一次 git commit。
+ * @param message - 提交信息。
+ * @param cwd - 目标仓库路径。
+ * @param noVerify - true 时追加 --no-verify，跳过 Git Hook（F09）。
+ */
+export function gitCommit(
+  message: string,
+  cwd?: string,
+  noVerify: boolean = false,
+): void {
+  const args = ["commit"];
+  if (noVerify) args.push("--no-verify");
+  args.push("-m", message);
+  execGit(args, { cwd });
 }

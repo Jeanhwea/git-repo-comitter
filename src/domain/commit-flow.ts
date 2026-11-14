@@ -85,6 +85,8 @@ export interface CommitRequest {
   repoPath?: string;
   /** true 时只提交已暂存的变更，不执行 git add。 */
   stagedOnly?: boolean;
+  /** true 时给 git commit 追加 --no-verify，跳过 Git Hook（F09）。 */
+  noVerify?: boolean;
   /** 本次调用的进度输出槽；缺省沿用全局输出槽（未装配则静默）。 */
   onProgress?: ProgressSink;
   /**
@@ -176,7 +178,7 @@ function tryFallback(repoPath?: string): {
 export async function executeCommit(
   request: CommitRequest,
 ): Promise<CommitOutcome> {
-  const { config, repoPath, stagedOnly } = request;
+  const { config, repoPath, stagedOnly, noVerify } = request;
   const startTime = performance.now();
 
   // P1：apiKey 为空时走兜底——不抛异常，规则化生成提交消息
@@ -186,7 +188,9 @@ export async function executeCommit(
     const { message } = await measure("生成提交信息（兜底）", () =>
       tryFallback(repoPath),
     );
-    await measure("执行 git commit", () => gitCommit(message, repoPath));
+    await measure("执行 git commit", () =>
+      gitCommit(message, repoPath, noVerify),
+    );
     const elapsedMs = performance.now() - startTime;
     log.debug(`全流程完成（兜底模式），总耗时 ${formatElapsed(elapsedMs)}`);
     return { committed: true, message, batchCount: 1, elapsedMs };
@@ -267,7 +271,9 @@ export async function executeCommit(
       );
     }
 
-    await measure("执行 git commit", () => gitCommit(message, repoPath));
+    await measure("执行 git commit", () =>
+      gitCommit(message, repoPath, noVerify),
+    );
 
     const elapsedMs = performance.now() - startTime;
     log.debug(`全流程完成，总耗时 ${formatElapsed(elapsedMs)}`);
