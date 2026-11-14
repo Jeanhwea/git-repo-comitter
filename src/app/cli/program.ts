@@ -58,7 +58,10 @@ program
   .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具")
   .helpOption("-h, --help", "显示帮助信息")
   .option("-s, --staged-only", "仅提交已暂存的变更")
-  .option("-n, --no-verify", "跳过 Git Hook 校验（等价于 git commit --no-verify）")
+  .option(
+    "-n, --no-verify",
+    "跳过 Git Hook 校验（等价于 git commit --no-verify）",
+  )
   .option("-V, --verbose", "输出详细进度日志（debug 级别）")
   .option("--debug", "同 --verbose，输出 debug 级别日志")
   .option("--trace", "输出最详细的追踪日志（trace 级别）");
