@@ -58,12 +58,18 @@ program
   .description("一款使用 LLM 生成 Git 提交信息并执行提交的命令行工具")
   .helpOption("-h, --help", "显示帮助信息")
   .option("-s, --staged-only", "仅提交已暂存的变更")
+  .option(
+    "-n, --no-verify",
+    "跳过 Git Hook 校验（等价于 git commit --no-verify）",
+  )
   .option("-V, --verbose", "输出详细进度日志（debug 级别）")
   .option("--debug", "同 --verbose，输出 debug 级别日志")
   .option("--trace", "输出最详细的追踪日志（trace 级别）");
 
 interface CliOptions {
   stagedOnly?: boolean;
+  // commander 的 --no-verify 是负向选项：未传为 true，传入后为 false。
+  verify?: boolean;
   verbose?: boolean;
   debug?: boolean;
   trace?: boolean;
@@ -89,7 +95,11 @@ program
   });
 
 program.action((options: CliOptions) => {
-  runCommit({ stagedOnly: options.stagedOnly ?? false }).catch(handleCliError);
+  // 负向选项在此反转成正向的 noVerify，交给下游透传到 git commit（F09）。
+  runCommit({
+    stagedOnly: options.stagedOnly ?? false,
+    noVerify: options.verify === false,
+  }).catch(handleCliError);
 });
 
 /**
