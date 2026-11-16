@@ -11,7 +11,7 @@ import {
   groupIntoBatches,
   parseDiffBlocks,
 } from "@/infra/git/diff";
-import { effectiveLimit, fitWithinBudget } from "@/infra/llm/budget";
+import { effectiveLimit, fitDraftsWithinBudget } from "@/infra/llm/budget";
 import { callWithRateLimitRetry, callWithValidation } from "@/infra/llm/retry";
 import {
   buildMessages,
@@ -110,10 +110,13 @@ export async function generateCommitMessageBatched(
   }
 
   emitProgress(`  正在合并 ${batches.length} 个批次的提交信息...`);
-  const { kept, omitted } = fitWithinBudget(
+  const fitted = fitDraftsWithinBudget(
     drafts.map((draft, i) => wrapDraft(i + 1, draft)),
     effectiveLimit(config, mergeCommitPrompt.system),
   );
+  // 保留首尾草稿，中间省略；index 仍取原始批次号，便于模型对应上下文。
+  const kept = [...fitted.head, ...fitted.tail];
+  const omitted = fitted.omitted;
 
   if (kept.length === 0) {
     throw new GrcError(

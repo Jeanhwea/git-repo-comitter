@@ -1,9 +1,9 @@
 /**
- * LLM 基础设施 —— 校验重试 + 限流退避。
+ * LLM 基础设施 —— 格式校验重试（门面）。
  *
  * 把「调用 → 校验 → 失败则附修复提示再试」的循环收敛在一处，供各业务域复用。
- * 另外在传输层对可恢复的瞬时错误（429 限流 / 5xx）做退避重试，与「格式校验重试」
- * 使用互相独立的计数器，避免语义混淆（I07）。
+ * 传输层的 429 / 5xx / 网络超时退避已拆到 retry-transport.ts（W6），
+ * 本文件保留门面导出，避免所有调用方改 import 路径。
  *
  * 修复提示由调用方必传：面向模型的文本属于提示词（prompts），基础设施不直接引用它，
  * 否则会产生 infra → prompts 的层级回边（架构 A2）。
@@ -14,49 +14,22 @@ import type { AppConfig } from "@/config/types";
 import { GrcError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
 import { emitProgress } from "@/shared/progress";
-import { formatElapsed, sleep } from "@/shared/time";
+import { formatElapsed } from "@/shared/time";
 import type { ValidationOutcome } from "@/shared/validation";
 
-import { chatCompletion } from "./transport/client";
+import { callWithRateLimitRetry } from "./retry-transport";
+
+export {
+  callWithRateLimitRetry,
+  classifyTransportError,
+  MAX_RATE_LIMIT_RETRIES,
+  type TransportErrorInfo,
+} from "./retry-transport";
 
 const log = createLogger("llm");
 
 /** 格式校验失败的最多重试次数（每次换修复提示让模型重新生成）。 */
 export const MAX_RETRIES = 3;
-
-/** 传输层限流（429）/ 服务端错误（5xx）的最多重试次数，独立于格式校验重试。 */
-export const MAX_RATE_LIMIT_RETRIES = 3;
-
-const RATE_LIMIT_BASE_DELAY_MS = 1000;
-const RATE_LIMIT_MAX_DELAY_MS = 8000;
-
-/** 网络层瞬时故障：没有 HTTP status，但同样值得退避重试。 */
-const NETWORK_ERROR_CODES = new Set([
-  "ETIMEDOUT",
-  "ECONNRESET",
-  "ECONNABORTED",
-  "ENOTFOUND",
-  "EAI_AGAIN",
-  "EPIPE",
-  "UND_ERR_CONNECT_TIMEOUT",
-  "UND_ERR_SOCKET",
-]);
-
-/** OpenAI SDK 的连接/超时异常名称。 */
-const NETWORK_ERROR_NAMES =
-  /^(?:APIConnectionError|APIConnectionTimeoutError|TimeoutError)$/;
-
-/**
- * 判定是否为可重试的网络层异常（无 HTTP status 的超时/连接错误）。
- * @param err - 待分类的异常。
- */
-function isNetworkError(err: unknown): boolean {
-  if (!err || typeof err !== "object") return false;
-  const code = (err as { code?: unknown }).code;
-  if (typeof code === "string" && NETWORK_ERROR_CODES.has(code)) return true;
-  const name = (err as { name?: unknown }).name;
-  return typeof name === "string" && NETWORK_ERROR_NAMES.test(name);
-}
 
 export interface ValidatedCallOptions<T> {
   validate: (content: string) => ValidationOutcome<T>;
@@ -67,139 +40,13 @@ export interface ValidatedCallOptions<T> {
   repairHint: (reason: string) => string;
 }
 
-/** 一次传输层异常的分类结论。 */
-export interface TransportErrorInfo {
-  /** 是否值得退避重试。 */
-  retryable: boolean;
-  /** 是否为 429 限流（语义上应等待后重试）。 */
-  rateLimited: boolean;
-  /** 从 Retry-After 解析出的冷却毫秒数（仅限流时可能有值）。 */
-  retryAfterMs?: number;
-}
-
 /**
- * 分类一次传输层异常：判断是否需要退避重试以及冷却时长。
- * 仅做鸭子类型判断（status / headers），不依赖 openai 的具体类型，便于测试与抽库。
- * @param err - 待分类的传输层异常。
- * @returns 分类结论（是否可重试 / 是否限流 / 建议冷却毫秒）。
- */
-export function classifyTransportError(err: unknown): TransportErrorInfo {
-  const status = httpStatusOf(err);
-  if (status === undefined) {
-    return { retryable: isNetworkError(err), rateLimited: false };
-  }
-  // 429 限流：可重试，且语义上应等待后重试。
-  if (status === 429) {
-    return {
-      retryable: true,
-      rateLimited: true,
-      retryAfterMs: retryAfterMsOf(err),
-    };
-  }
-  // 5xx / 网关错误：可重试（瞬时服务端故障），但不走「限流」语义。
-  if (status === 500 || status === 502 || status === 503 || status === 504) {
-    return { retryable: true, rateLimited: false };
-  }
-  return { retryable: false, rateLimited: false };
-}
-
-/**
- * 从异常对象中读取 HTTP 状态码（鸭子类型，兼容 openai 的 APIError）。
- * @param err - 待检查的错误对象。
- * @returns 状态码数字；无法识别时返回 undefined。
- */
-function httpStatusOf(err: unknown): number | undefined {
-  if (err && typeof err === "object" && "status" in err) {
-    const s = (err as { status?: unknown }).status;
-    return typeof s === "number" ? s : undefined;
-  }
-  return undefined;
-}
-
-/**
- * 从异常头部解析 Retry-After（秒），并封顶到最大冷却时长。
- * @param err - 携带 headers 的错误对象。
- * @returns 冷却毫秒数；无 Retry-After 或解析失败时返回 undefined。
- */
-function retryAfterMsOf(err: unknown): number | undefined {
-  const headers = (err as { headers?: unknown })?.headers;
-  if (!headers) return undefined;
-  let raw: unknown;
-  if (headers && typeof (headers as { get?: unknown }).get === "function") {
-    raw = (headers as { get(h: string): unknown }).get("retry-after");
-  } else if (headers && typeof headers === "object") {
-    raw = (headers as Record<string, unknown>)["retry-after"];
-  } else {
-    return undefined;
-  }
-  if (raw == null) return undefined;
-  const secs = Number(raw);
-  if (Number.isNaN(secs)) return undefined;
-  // 封顶，避免服务端给出过长冷却导致 CLI 长时间挂起。
-  return Math.min(secs, RATE_LIMIT_MAX_DELAY_MS / 1000) * 1000;
-}
-
-/**
- * 计算第 attempt 次限流重试的指数退避时长（带封顶）。
- * @param attempt - 当前限流重试次数（从 1 开始）。
- * @returns 退避毫秒数。
- */
-function backoffMs(attempt: number): number {
-  return Math.min(
-    RATE_LIMIT_BASE_DELAY_MS * 2 ** (attempt - 1),
-    RATE_LIMIT_MAX_DELAY_MS,
-  );
-}
-
-/**
- * 带限流退避的传输层调用：命中 429/5xx/网络超时时按 Retry-After / 指数退避重试，
- * 重试耗尽后：429 抛 RATE_LIMITED，网络类抛 LLM_FAILED，其余原样上抛。
+ * 生成并校验内容：校验失败时追加修复提示重试，耗尽后抛 VALIDATION_FAILED。
  * @param config - 应用配置。
- * @param messages - 发送给模型的消息列表。
- * @param temperatureOverride - 覆盖的采样温度；缺省回落到配置值。
- * @param label - 当前生成内容的标签（用于错误与日志）。
- * @returns 模型返回的文本内容。
+ * @param messages - 初始消息列表（不会被改写）。
+ * @param options - 校验器、标签、重试次数与修复提示。
+ * @returns 校验通过的值。
  */
-export async function callWithRateLimitRetry(
-  config: AppConfig,
-  messages: OpenAI.ChatCompletionMessageParam[],
-  temperatureOverride: number | undefined,
-  label: string,
-): Promise<string> {
-  let rateLimitAttempt = 0;
-  for (;;) {
-    try {
-      return await chatCompletion(config, messages, temperatureOverride);
-    } catch (err) {
-      const klass = classifyTransportError(err);
-      if (!klass.retryable || rateLimitAttempt >= MAX_RATE_LIMIT_RETRIES) {
-        if (klass.rateLimited) {
-          throw new GrcError(
-            `请求过于频繁（${label}），请稍后重试或降低批量规模。`,
-            "RATE_LIMITED",
-          );
-        }
-        if (klass.retryable) {
-          throw new GrcError(
-            `LLM 网络请求失败（${label}），已退避重试 ${MAX_RATE_LIMIT_RETRIES} 次：${err instanceof Error ? err.message : String(err)}`,
-            "LLM_FAILED",
-          );
-        }
-        throw err;
-      }
-      rateLimitAttempt++;
-      const delayMs = klass.retryAfterMs ?? backoffMs(rateLimitAttempt);
-      log.debug(
-        `限流退避重试（第 ${rateLimitAttempt}/${MAX_RATE_LIMIT_RETRIES} 次），冷却 ${delayMs}ms`,
-      );
-      emitProgress(
-        `  等待限流冷却 ${(delayMs / 1000).toFixed(0)} 秒（第 ${rateLimitAttempt}/${MAX_RATE_LIMIT_RETRIES} 次）...\n`,
-      );
-      await sleep(delayMs);
-    }
-  }
-}
-
 export async function callWithValidation<T>(
   config: AppConfig,
   messages: OpenAI.ChatCompletionMessageParam[],
