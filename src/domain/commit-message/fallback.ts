@@ -31,7 +31,8 @@ const log = createLogger("fallback");
 /**
  * 按主题归并生成正文。原先「分组行 + 每文件一行」的写法会把文件数直接变成
  * 要点数，10 个文件的普通变更就会命中 C3；这里每组固定一条要点，
- * 文件名内联到同一行并在行宽处收尾，使要点数恒为 3 组以内。
+ * 文件名内联到同一行并在行宽处收尾。五个分组（新增/修改/删除/重命名/子模块）
+ * 各占一条要点，恒低于 C3 的要点上限。
  * @param files - 暂存区变更文件列表。
  */
 function buildBody(files: FileChange[]): string {
@@ -48,6 +49,14 @@ function buildBody(files: FileChange[]): string {
       label: "删除文件",
       items: files.filter((f) => f.status === "deleted"),
     },
+    {
+      label: "重命名文件",
+      items: files.filter((f) => f.status === "renamed"),
+    },
+    {
+      label: "子模块变更",
+      items: files.filter((f) => f.status === "submodule"),
+    },
   ];
 
   const lines: string[] = [];
@@ -57,6 +66,9 @@ function buildBody(files: FileChange[]): string {
       if (f.isBinary) return `${f.path} [二进制]`;
       if (label === "修改文件") {
         return `${f.path} (+${f.additions}/-${f.deletions})`;
+      }
+      if (label === "重命名文件" && f.oldPath) {
+        return `${f.oldPath} → ${f.path}`;
       }
       return f.path;
     });
