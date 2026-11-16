@@ -11,6 +11,11 @@ const state = vi.hoisted(() => ({
   fallback: vi.fn(),
   gitCommit: vi.fn(),
   isGitRepo: vi.fn(() => true),
+  review: vi.fn(() => ({
+    shouldCommit: true,
+    suspiciousFiles: [],
+    reason: "",
+  })),
 }));
 
 vi.mock("@/infra/git/changes", () => ({
@@ -23,7 +28,9 @@ vi.mock("@/infra/git/changes", () => ({
   })),
   hasStagedChanges: vi.fn(() => true),
   hasUnstagedChanges: vi.fn(() => true),
-  readNewFileContents: vi.fn(() => []),
+  readNewFileContents: vi.fn(() => [
+    { path: "new.ts", content: "const a = 1;" },
+  ]),
 }));
 vi.mock("@/infra/git/diff", () => ({
   getStagedDiff: vi.fn(() => "diff --git a/x.ts b/x.ts\n+1"),
@@ -40,7 +47,7 @@ vi.mock("@/domain/commit-message/fallback", () => ({
   generateFallbackMessage: state.fallback,
 }));
 vi.mock("@/domain/file-review/reviewer", () => ({
-  reviewNewFiles: vi.fn(),
+  reviewNewFiles: state.review,
 }));
 
 import type { AppConfig } from "@/config/types";
@@ -105,6 +112,20 @@ describe("executeCommit 的提交前硬门禁", () => {
     expect(outcome.committed).toBe(true);
     expect(state.gitCommit).toHaveBeenCalledTimes(1);
     expect(state.gitCommit.mock.calls[0]?.[0]).toBe(GOOD);
+  });
+
+  test("审查门禁默认关闭，库需显式开启（Q4）", async () => {
+    await executeCommit({ config: config() });
+    expect(state.review).not.toHaveBeenCalled();
+  });
+
+  test("review 为 true 且提供回调时启用审查门禁", async () => {
+    await executeCommit({
+      config: config(),
+      review: true,
+      onReview: () => true,
+    });
+    expect(state.review).toHaveBeenCalledTimes(1);
   });
 
   test("非 git 仓库在任何路径都先行中止", async () => {

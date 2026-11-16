@@ -54,7 +54,7 @@ npm i -g .
 本地开发：
 
 ```bash
-pnpm build && node dist/index.cjs
+pnpm build && node dist/cli.cjs
 ```
 
 代码校验（PR 时由 GitHub Actions 自动执行）：
@@ -64,6 +64,8 @@ pnpm lint          # ESLint 检查
 pnpm format:check  # Prettier 格式检查
 pnpm format        # Prettier 自动格式化
 pnpm check         # TypeScript 类型检查
+pnpm check:rules   # F04 规则 / 提示词 / 阈值对账
+pnpm test          # 单元测试
 ```
 
 ## 使用
@@ -82,7 +84,7 @@ pnpm check         # TypeScript 类型检查
     "model": "deepseek-v4-flash",
     "temperature": 0.7,
     "maxInputTokens": 262144,
-    "maxOutputTokens": 16384
+    "maxOutputTokens": 8192
   }
 }
 ```
@@ -93,7 +95,9 @@ pnpm check         # TypeScript 类型检查
 grc init
 ```
 
-依次设置 API 地址、模型名称、API Key。配置保存到 `~/.grc/config.json`。
+依次设置 API 地址、模型名称、API Key（输入不回显）。配置保存到 `~/.grc/config.json`，权限收紧为仅当前用户可读写（Windows 除外）。
+
+CLI 选项：`--staged-only` 仅提交暂存区，`--no-verify` 跳过 Git Hook，`--no-review` 跳过提交前审查门禁。未配置 API Key 时自动使用规则化模式生成提交消息。
 
 ## 提交信息风格
 
@@ -117,6 +121,8 @@ const outcome = await commit({
   repoPath: "/path/to/repo", // 缺省为进程当前工作目录
   stagedOnly: false, // true 时只提交已暂存的变更
   onProgress: (msg) => console.log(msg), // 缺省静默
+  noVerify: false, // true 时等价于 git commit --no-verify
+  review: false,   // true 时启用审查门禁（需同时提供 onReview）
 });
 
 if (outcome.committed) {
@@ -144,7 +150,8 @@ gitCommit(message);
 | `generateCommitMessageBatched(diff, config)` | 分批生成再合并，返回 `{ message, batchCount }` |
 | `validateCommitMessage(content)` | 按 Conventional Commits 约束校验一条提交信息 |
 | `getStagedDiff(cwd?)` | 取得暂存区 diff（已排除二进制内容） |
-| `gitCommit(message, cwd?)` | 执行一次 `git commit` |
+| `gitCommit(message, cwd?, noVerify?)` | 执行一次 `git commit`；`noVerify` 为 true 时跳过 Git Hook |
+| `runGrc({ argv? })` | 从 `git-repo-comitter/cli` 导入的 CLI 一键入口，供 Node 宿主嵌入 |
 | `resolveConfig(user?)` / `loadDefaultConfig()` / `loadUserConfigFile()` | 组装配置，纯函数、不产生副作用 |
 | `GrcError` / `GrcErrorCode` | 错误类型与稳定错误码 |
 | `setProgressSink` / `setLogSink` / `setLogLevel` | 进度输出槽、日志输出槽与日志级别 |
@@ -157,7 +164,9 @@ gitCommit(message);
 |------|--------|-----|
 | 配置 | 读取 `~/.grc/config.json`，缺失时提示 `grc init` | 必须显式传入 `config`，不读全局文件 |
 | 输出 | 直接打印进度与结果 | 默认静默，需通过 `onProgress` / `setProgressSink` 接收 |
-| 交互 | 审查门禁会向用户提问 | 不提问；传入 `onReview` 才启用审查门禁 |
+| 交互 | 审查门禁默认开启，可用 `--no-review` 关闭 | 默认关闭；设置 `review: true` 并提供 `onReview` 才启用 |
 | 失败 | 打印错误并以退出码结束进程 | 抛出 `GrcError`，由调用方按 `code` 分支处理 |
 
-> 命令行本身就是这套 API 的消费者，因此两者不会出现两套行为。
+浏览器场景从 `git-repo-comitter/browser` 导入（仅 ESM）：提供配置、生成、校验与横切能力，不暴露任何 git 读写 API，diff 由宿主侧计算后以字符串传入。
+
+> 命令行本身就是这套 API 的消费者：两者共用同一条提交流程与提交前校验门禁，不按 API Key 是否配置分叉行为。

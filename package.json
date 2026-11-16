@@ -15,6 +15,11 @@
     "./browser": {
       "types": "./dist/types/lib-browser.d.ts",
       "import": "./dist/browser/index.js"
+    },
+    "./cli": {
+      "types": "./dist/types/cli.d.ts",
+      "import": "./dist/cli.cjs",
+      "require": "./dist/cli.cjs"
     }
   },
   "bin": {
@@ -48,6 +53,10 @@
   ],
   "author": "jeanhwea",
   "license": "unlicense",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "packageManager": "pnpm@11.28.9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Jeanhwea/git-repo-comitter.git"

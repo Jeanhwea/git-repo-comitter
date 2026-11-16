@@ -16,6 +16,8 @@ export interface CommitOptions {
   stagedOnly?: boolean;
   /** true 时跳过 Git Hook（F09）。 */
   noVerify?: boolean;
+  /** false 时跳过提交前审查门禁（--no-review，Q4）。 */
+  review?: boolean;
 }
 
 export async function runCommit(options: CommitOptions = {}): Promise<void> {
@@ -31,6 +33,7 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     config,
     stagedOnly: options.stagedOnly ?? false,
     noVerify: options.noVerify ?? false,
+    review: options.review ?? true,
     onProgress: (message) => console.log(message),
     onReview: createCliReviewHandler(),
   });

@@ -88,6 +88,8 @@ export interface CommitRequest {
   stagedOnly?: boolean;
   /** true 时给 git commit 追加 --no-verify，跳过 Git Hook（F09）。 */
   noVerify?: boolean;
+  /** true 时启用审查门禁；库默认关闭，CLI 默认开启并可用 --no-review 关闭（Q4）。 */
+  review?: boolean;
   /** 本次调用的进度输出槽；缺省沿用全局输出槽（未装配则静默）。 */
   onProgress?: ProgressSink;
   /**
@@ -131,8 +133,8 @@ async function runReviewGate(
   cwd?: string,
 ): Promise<void> {
   const { config, onReview } = request;
-  if (!onReview) {
-    log.debug("未提供审查回调，跳过审查门禁");
+  if (request.review !== true || !onReview) {
+    log.debug("未显式启用审查门禁，跳过");
     return;
   }
 
