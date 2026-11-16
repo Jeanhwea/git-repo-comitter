@@ -12,7 +12,7 @@ vi.mock("@/infra/llm/transport/client", () => ({
 
 import type { AppConfig } from "@/config/types";
 import { GrcError } from "@/shared/errors";
-import { emitProgress, setProgressSink } from "@/shared/progress";
+import { setProgressSink } from "@/shared/progress";
 
 import {
   callWithValidation,

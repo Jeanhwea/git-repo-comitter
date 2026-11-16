@@ -28,13 +28,14 @@
     "build": "node scripts/build.mjs",
     "fmt": "node scripts/fmt.mjs",
     "ins": "node scripts/ins.mjs",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint": "eslint src/ tests/ scripts/ *.config.ts eslint.config.js",
+    "lint:fix": "eslint src/ tests/ scripts/ *.config.ts eslint.config.js --fix",
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"*.config.ts\" \"eslint.config.js\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\" \"*.config.ts\" \"eslint.config.js\"",
     "prepare": "husky"
   },
   "keywords": [
@@ -59,7 +60,7 @@
     "access": "public"
   },
   "lint-staged": {
-    "*.ts": [
+    "**/*.{ts,mjs}": [
       "prettier --write",
       "eslint --fix"
     ]
@@ -69,6 +70,7 @@
     "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^8.63.0",
     "@typescript-eslint/parser": "^8.63.0",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
@@ -82,7 +84,7 @@
     "tsc-alias": "^1.9.9",
     "typescript": "^6.0.3",
     "vite": "^8.1.4",
-    "vitest": "^5.0.5"
+    "vitest": "5.1.0"
   },
   "dependencies": {
     "commander": "^15.0.0",

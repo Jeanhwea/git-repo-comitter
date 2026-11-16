@@ -59,5 +59,9 @@ jobs:
       - name: Type check
         run: pnpm check
 
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      # 与发布共用同一条构建链：覆盖 cli/browser/types 产物与浏览器入口护栏。
       - name: Build
-        run: pnpm vite build
+        run: pnpm build
