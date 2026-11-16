@@ -20,9 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # pnpm 版本由 package.json 的 packageManager 提供，不在此重复声明。
       - uses: pnpm/action-setup@v6
-        with:
-          version: "11"
 
       - uses: actions/setup-node@v6
         with:
@@ -44,9 +43,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # pnpm 版本由 package.json 的 packageManager 提供，不在此重复声明。
       - uses: pnpm/action-setup@v6
-        with:
-          version: "11"
 
       - uses: actions/setup-node@v6
         with:
