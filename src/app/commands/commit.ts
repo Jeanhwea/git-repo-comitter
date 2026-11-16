@@ -7,7 +7,6 @@
 import { loadCliConfig } from "@/app/config/load";
 import { createCliReviewHandler } from "@/app/steps/review";
 import { executeCommit } from "@/domain/commit-flow";
-import { CliError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
 import { formatElapsed } from "@/shared/time";
 
@@ -26,13 +25,8 @@ export async function runCommit(options: CommitOptions = {}): Promise<void> {
     model: config.llm.model,
   });
 
-  if (!config.apiKey) {
-    throw new CliError(
-      "API Key 未设置，请运行 `grc init` 进行配置。",
-      "CONFIG_MISSING",
-    );
-  }
-
+  // apiKey 为空时与库走同一条规则化降级路径（W2 / Q2），
+  // 不再在 CLI 提前抛 CONFIG_MISSING，避免两套行为。
   const outcome = await executeCommit({
     config,
     stagedOnly: options.stagedOnly ?? false,
