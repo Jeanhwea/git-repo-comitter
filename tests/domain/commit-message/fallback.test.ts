@@ -96,6 +96,31 @@ describe("generateFallbackMessage", () => {
     assertCompliant(generateFallbackMessage(changeSet([])));
   });
 
+  test("重命名与子模块变更进入正文并产出合规消息", () => {
+    probe.mode = "real";
+    const items: FileChange[] = [
+      {
+        path: "docs/new.md",
+        oldPath: "docs/old.md",
+        status: "renamed",
+        isBinary: false,
+        additions: 2,
+        deletions: 1,
+      },
+      {
+        path: "vendor/lib",
+        status: "submodule",
+        isBinary: false,
+        additions: 0,
+        deletions: 0,
+      },
+    ];
+    const message = generateFallbackMessage(changeSet(items));
+    expect(message).toContain("docs/old.md → docs/new.md");
+    expect(message).toContain("子模块变更");
+    assertCompliant(message);
+  });
+
   test("超长文件列表被汇总到同一条要点且不超行宽", () => {
     probe.mode = "real";
     const items: FileChange[] = Array.from({ length: 12 }, (_, i) => ({

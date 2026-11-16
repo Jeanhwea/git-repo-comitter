@@ -15,14 +15,18 @@ import type { FileChange } from "@/infra/git/changes";
  *  5. 新增文件 → feat
  *  6. 修改文件 → fix
  *  7. 新增/修改 .json / .yaml / .yml / config/ 配置相关 → build
- *  8. 修改文件名含 refactor → refactor
- *  9. 兜底 → chore
+ *  8. 路径含 refactor → refactor
+ *  9. 子模块指针变更 → chore（指针移动多为依赖/子工程同步）
+ * 10. 重命名且无增删改 → refactor（纯移动即为结构调整）
+ * 11. 兜底 → chore
  * @param files - 文件变更列表，用于推断 type
  */
 export function inferType(files: FileChange[]): string {
   const added = files.filter((f) => f.status === "added");
   const modified = files.filter((f) => f.status === "modified");
   const deleted = files.filter((f) => f.status === "deleted");
+  const renamed = files.filter((f) => f.status === "renamed");
+  const submodule = files.filter((f) => f.status === "submodule");
   const allFiles = files.map((f) => f.path);
 
   // 1. test
@@ -48,6 +52,7 @@ export function inferType(files: FileChange[]): string {
     allFiles.some((p) => /^\.(github|gitlab|vscode)\//.test(p)) ||
     allFiles.some((p) => /^\.(gitignore|editorconfig|env|nvmrc)$/.test(p)) ||
     (added.length === 0 &&
+      modified.length > 0 &&
       modified.every((f) => /\.(json|yaml|yml)$/i.test(f.path)))
   ) {
     return "chore";
@@ -73,6 +78,21 @@ export function inferType(files: FileChange[]): string {
 
   // 8. refactor hint in file names
   if (allFiles.some((p) => /refactor/i.test(p))) {
+    return "refactor";
+  }
+
+  // 9. 子模块指针同步
+  if (submodule.length > 0) {
+    return "chore";
+  }
+
+  // 10. 纯重命名（无增删改）视作结构调整
+  if (
+    renamed.length > 0 &&
+    added.length === 0 &&
+    modified.length === 0 &&
+    deleted.length === 0
+  ) {
     return "refactor";
   }
 
@@ -134,6 +154,8 @@ export function buildDescription(type: string, files: FileChange[]): string {
   const added = files.filter((f) => f.status === "added");
   const modified = files.filter((f) => f.status === "modified");
   const deleted = files.filter((f) => f.status === "deleted");
+  const renamed = files.filter((f) => f.status === "renamed");
+  const submodule = files.filter((f) => f.status === "submodule");
 
   const count = files.length;
   const atoms: string[] = [];
@@ -141,6 +163,8 @@ export function buildDescription(type: string, files: FileChange[]): string {
   if (added.length > 0) atoms.push(`新增 ${added.length} 个文件`);
   if (modified.length > 0) atoms.push(`修改 ${modified.length} 个文件`);
   if (deleted.length > 0) atoms.push(`删除 ${deleted.length} 个文件`);
+  if (renamed.length > 0) atoms.push(`重命名 ${renamed.length} 个文件`);
+  if (submodule.length > 0) atoms.push(`同步 ${submodule.length} 个子模块`);
 
   const suffix = atoms.join("，") || `${count} 个文件变更`;
 
