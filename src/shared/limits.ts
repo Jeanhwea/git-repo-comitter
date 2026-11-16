@@ -31,3 +31,9 @@ export const REVIEW_REASON_MAX_LENGTH = 80;
 
 /** 超过该字符数的非源码新增文件判为可疑（提示词与 wrapNewFiles 共用）。 */
 export const REVIEW_MAX_FILE_CHARS = 20000;
+
+/** 单次 LLM 请求超时；显式设置避免依赖 SDK 默认值。 */
+export const LLM_DEFAULT_TIMEOUT_MS = 60_000;
+
+/** SDK 内部重试次数设为 0，限流/5xx 统一由 infra/llm/retry 的退避循环处理。 */
+export const LLM_DEFAULT_MAX_RETRIES = 0;

@@ -33,6 +33,7 @@ const EXIT_CODES: Record<GrcErrorCode, number> = {
   LLM_FAILED: 1,
   RATE_LIMITED: 1,
   GIT_FAILED: 1,
+  HOOK_BLOCKED: 1,
   UNKNOWN: 1,
 };
 

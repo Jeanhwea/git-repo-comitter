@@ -9,6 +9,10 @@ import OpenAI from "openai";
 
 import type { AppConfig } from "@/config/types";
 import { GrcError } from "@/shared/errors";
+import {
+  LLM_DEFAULT_MAX_RETRIES,
+  LLM_DEFAULT_TIMEOUT_MS,
+} from "@/shared/limits";
 import { createLogger } from "@/shared/logger";
 import { formatElapsed } from "@/shared/time";
 
@@ -31,6 +35,9 @@ function createClient(config: AppConfig): OpenAI {
     apiKey: config.apiKey,
     baseURL: config.endpoint,
     dangerouslyAllowBrowser: isBrowser,
+    // 显式关闭 SDK 内部重试：429 / 5xx 统一由项目的限流退避处理，避免请求数翻倍。
+    timeout: config.timeoutMs ?? LLM_DEFAULT_TIMEOUT_MS,
+    maxRetries: config.maxRetries ?? LLM_DEFAULT_MAX_RETRIES,
   });
 }
 

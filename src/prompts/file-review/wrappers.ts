@@ -2,6 +2,7 @@
  * 用户消息的构造。与系统提示词保持同一套 XML 标记风格：
  * 文件内容是不可信数据，包进 file 标记后与审查指令形成清晰边界。
  */
+import { escapeXmlAttribute, escapeXmlText } from "../escape";
 
 /** 待审查的新增文件：路径与内容（不可读时以占位文本代替）。 */
 export interface NewFileContent {
@@ -15,7 +16,7 @@ export interface NewFileContent {
  * @param content - 文件内容（不可读时为占位文本），其长度写入 size 属性。
  */
 const wrapNewFile = (path: string, content: string): string =>
-  `<file path="${path}" size="${content.length}">\n${content}\n</file>`;
+  `<file path="${escapeXmlAttribute(path)}" size="${content.length}">\n${escapeXmlText(content)}\n</file>`;
 
 /**
  * 包裹全部新增文件。

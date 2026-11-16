@@ -38,6 +38,38 @@ export function setGitExecutor(next: GitExecutor): void {
   current = next;
 }
 
+/** 探测式 git 调用的结果：明确区分「命令失败」与「成功但没有输出」。 */
+export interface GitExecResult {
+  ok: boolean;
+  stdout: string;
+  stderr?: string;
+}
+
+/**
+ * 执行 git 命令并显式区分失败与空结果。
+ * 探测式调用（「有没有暂存变更」等）应使用本函数，不再依赖 allowFailure 返回空串。
+ * @param args - git 参数数组。
+ * @param options - 工作目录等选项。
+ * @returns 成功与否、标准输出与失败原因。
+ */
+export function tryExecGit(
+  args: string[],
+  options: Omit<GitExecOptions, "allowFailure"> = {},
+): GitExecResult {
+  try {
+    return {
+      ok: true,
+      stdout: execGit(args, { ...options, allowFailure: false }),
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      stdout: "",
+      stderr: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 /**
  * 执行 git 命令：委托给已装配的执行器。
  *

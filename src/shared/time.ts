@@ -6,6 +6,14 @@
  */
 
 /**
+ * 等待指定毫秒数（退避与批次间隔共用）。
+ * @param ms - 等待时长。
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * 将毫秒数格式化为人类可读的中文时间字符串。
  * @param ms - 耗时毫秒数；一分钟以上走分钟档，一秒以上走秒档。
  */
