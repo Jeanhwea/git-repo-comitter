@@ -16,7 +16,17 @@ const ids = (text) =>
   new Set([...text.matchAll(/\[([A-F]\d)\]/g)].map((m) => m[1]));
 
 const doc = read("docs/feat/F04.提交消息严格校验.md");
-const checker = read("src/domain/commit-message/checker.ts");
+// checker 已按职责拆为入口 + checker/ 子模块；编号判定分散在各子模块，
+// 对账时读取整个目录的合并文本，避免拆分造成「有规则无校验」误报。
+const checkerDir = "src/domain/commit-message/checker";
+const checkerFiles = [
+  "src/domain/commit-message/checker.ts",
+  ...fs
+    .readdirSync(path.join(root, checkerDir))
+    .filter((f) => f.endsWith(".ts"))
+    .map((f) => `${checkerDir}/${f}`),
+];
+const checker = checkerFiles.map(read).join("\n");
 const ruleSource = read("src/shared/commit-rules.ts");
 const limitsSource = read("src/shared/commit-limits.ts");
 
