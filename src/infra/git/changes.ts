@@ -4,7 +4,7 @@
  *
  * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit(\{ repoPath \})）。
  */
-import { execGit } from "./executor";
+import { execGit, tryExecGit } from "./executor";
 
 /**
  * 单个文件的变更类型。
@@ -41,9 +41,9 @@ function listNewFiles(scope: NewFileScope, cwd?: string): string[] {
     scope === "staged"
       ? ["diff", "--cached", "--name-status", "--diff-filter=A"]
       : ["diff", "--name-status", "--diff-filter=A"];
-  const output = execGit(args, { allowFailure: true, cwd });
-  if (!output.trim()) return [];
-  return output
+  const result = tryExecGit(args, { cwd });
+  if (!result.ok || !result.stdout.trim()) return [];
+  return result.stdout
     .split("\n")
     .filter((line) => line.startsWith("A\t"))
     .map((line) => line.slice(2).trim())

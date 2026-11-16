@@ -11,6 +11,11 @@
  * 架构 A5：配置层只做「数据」，不含终端交互、不直接 console 输出。
  * CLI 的告警与交互式修复上移到 app/config/load.ts。
  */
+import {
+  LLM_DEFAULT_MAX_RETRIES,
+  LLM_DEFAULT_TIMEOUT_MS,
+} from "@/shared/limits";
+
 import type { AppConfig, LLMConfig, UserConfig } from "./types";
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -22,6 +27,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   apiKey: "",
   endpoint: "https://api.openai.com/v1",
+  timeoutMs: LLM_DEFAULT_TIMEOUT_MS,
+  maxRetries: LLM_DEFAULT_MAX_RETRIES,
 };
 
 /** 返回一份内置默认配置的深拷贝，供调用方在其基础上覆盖字段。 */

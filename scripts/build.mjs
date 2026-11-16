@@ -126,7 +126,7 @@ function main() {
     try {
       execSync(task.cmd, { stdio: "inherit", cwd: root });
       console.log(`[OK] ${task.desc}`);
-    } catch (err) {
+    } catch {
       console.error(`\n  ✗ ${task.desc} 失败，已中断后续构建`);
       failed++;
       break;

@@ -12,7 +12,7 @@ vi.mock("@/infra/llm/transport/client", () => ({
 
 import type { AppConfig } from "@/config/types";
 import { GrcError } from "@/shared/errors";
-import { emitProgress, setProgressSink } from "@/shared/progress";
+import { setProgressSink } from "@/shared/progress";
 
 import {
   callWithValidation,
@@ -128,5 +128,32 @@ describe("callWithValidation 限流退避", () => {
     expect((err as GrcError).code).toBe("RATE_LIMITED");
     expect(chat).toHaveBeenCalledTimes(MAX_RATE_LIMIT_RETRIES + 1);
     expect(messages.some((m) => m.includes("等待限流冷却"))).toBe(true);
+  });
+
+  test("网络超时（无 status）纳入退避并最终抛 LLM_FAILED", async () => {
+    chat.mockRejectedValue(
+      Object.assign(new Error("timeout"), { code: "ETIMEDOUT" }),
+    );
+    const p = callWithValidation(baseConfig(), [], {
+      validate: () => ({ valid: true, value: "ok" }),
+      repairHint: () => "",
+    });
+    void p.catch(() => {});
+    await vi.runAllTimersAsync();
+    const err = await p.catch((e) => e);
+    expect((err as GrcError).code).toBe("LLM_FAILED");
+    expect(chat).toHaveBeenCalledTimes(MAX_RATE_LIMIT_RETRIES + 1);
+  });
+
+  test("5xx 退避后成功，不再暴露原始 SDK 错误", async () => {
+    chat.mockRejectedValueOnce(makeError(503)).mockResolvedValueOnce("ok");
+    const p = callWithValidation(baseConfig(), [], {
+      validate: () => ({ valid: true, value: "ok" }),
+      repairHint: () => "",
+    });
+    void p.catch(() => {});
+    await vi.runAllTimersAsync();
+    await expect(p).resolves.toBe("ok");
+    expect(chat).toHaveBeenCalledTimes(2);
   });
 });

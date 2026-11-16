@@ -15,9 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # pnpm 版本由 package.json 的 packageManager 提供，不在此重复声明。
       - uses: pnpm/action-setup@v6
-        with:
-          version: "10"
 
       - uses: actions/setup-node@v6
         with:
@@ -25,10 +24,23 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
 
-      - run: npm install -g npm@latest
+      - name: 校验 tag 与包版本一致
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json','utf8')).version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::tag v${TAG_VERSION} 与 package.json ${PKG_VERSION} 不一致" >&2
+            exit 1
+          fi
 
       - run: pnpm install --frozen-lockfile
 
+      # 打 tag 不得绕过 CI 门禁：与 ci.yml 执行同一套检查与构建。
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm check
+      - run: pnpm check:rules
+      - run: pnpm test:coverage
       - run: pnpm build
 
-      - run: npm publish --provenance --access public
+      - run: npm publish --provenance

@@ -12,6 +12,7 @@
  */
 import type { AppConfig } from "@/config/types";
 import { generateCommitMessageBatched } from "@/domain/commit-message/batch";
+import { validateCommitMessage } from "@/domain/commit-message/checker";
 import { generateFallbackMessage } from "@/domain/commit-message/fallback";
 import {
   type ReviewResult,
@@ -87,6 +88,8 @@ export interface CommitRequest {
   stagedOnly?: boolean;
   /** true 时给 git commit 追加 --no-verify，跳过 Git Hook（F09）。 */
   noVerify?: boolean;
+  /** true 时启用审查门禁；库默认关闭，CLI 默认开启并可用 --no-review 关闭（Q4）。 */
+  review?: boolean;
   /** 本次调用的进度输出槽；缺省沿用全局输出槽（未装配则静默）。 */
   onProgress?: ProgressSink;
   /**
@@ -130,8 +133,8 @@ async function runReviewGate(
   cwd?: string,
 ): Promise<void> {
   const { config, onReview } = request;
-  if (!onReview) {
-    log.debug("未提供审查回调，跳过审查门禁");
+  if (request.review !== true || !onReview) {
+    log.debug("未显式启用审查门禁，跳过");
     return;
   }
 
@@ -156,24 +159,45 @@ async function runReviewGate(
 }
 
 /**
- * P1 / P2 共用辅助函数：通过规则化方式生成兜底提交消息并执行 git commit。
- * 抽取为独立函数以避免两处入口重复 `getStagedChangeSet + generateFallbackMessage + gitCommit`。
+ * 生成兜底提交消息。P1（无 API Key）与 P2（LLM 失败）共用。
  * @param repoPath - 目标仓库路径。
- * @returns 兜底生成的提交消息。
+ * @returns 兜底生成的提交消息（已由 generateFallbackMessage 保证合规）。
  */
-function tryFallback(repoPath?: string): {
-  isFallback: true;
-  message: string;
-} {
+function tryFallback(repoPath?: string): string {
   const changeSet = getStagedChangeSet(repoPath);
-  const message = generateFallbackMessage(changeSet);
-  return { isFallback: true, message };
+  return generateFallbackMessage(changeSet);
+}
+
+/**
+ * 写入 git 前的统一硬门禁：所有路径（正常生成、分批合并、P1 规则化、
+ * P2 降级）共用，任何不合规的消息都必须在这里止步。
+ * @param message - 待写入的提交消息。
+ * @param repoPath - 目标仓库路径。
+ * @param noVerify - 是否跳过 git hook。
+ */
+function commitChecked(
+  message: string,
+  repoPath: string | undefined,
+  noVerify: boolean | undefined,
+): void {
+  const validation = validateCommitMessage(message);
+  if (!validation.valid) {
+    throw new GrcError(
+      `提交消息未通过校验，已中止提交（未写入 git）。\n${validation.reason ?? "未知失败"}`,
+      "VALIDATION_FAILED",
+    );
+  }
+  log.debug("提交前校验通过，执行 git commit");
+  gitCommit(message, repoPath, noVerify);
 }
 
 /**
  * 执行一次完整的「生成提交信息并提交」流程。
+ *
+ * P1 / P2 / 正常生成三条路径共用同一套仓库校验、暂存、diff 提取与提交门禁，
+ * 差异只在「消息怎么来」；因此 CLI 与库在 apiKey 为空时行为一致。
  * @param request - 提交请求：配置、仓库路径、是否仅暂存、审查与进度回调。
- * @throws GrcError 配置缺失、非 git 仓库、无暂存变更、审查否决、生成失败等
+ * @throws GrcError 非 git 仓库、无暂存变更、审查否决、校验失败、生成失败等
  */
 export async function executeCommit(
   request: CommitRequest,
@@ -181,42 +205,32 @@ export async function executeCommit(
   const { config, repoPath, stagedOnly, noVerify } = request;
   const startTime = performance.now();
 
-  // P1：apiKey 为空时走兜底——不抛异常，规则化生成提交消息
-  if (!config.apiKey) {
-    emitProgress("未配置 LLM，使用规则化模式生成提交信息...\n");
-    emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
-    const { message } = await measure("生成提交信息（兜底）", () =>
-      tryFallback(repoPath),
-    );
-    await measure("执行 git commit", () =>
-      gitCommit(message, repoPath, noVerify),
-    );
-    const elapsedMs = performance.now() - startTime;
-    log.debug(`全流程完成（兜底模式），总耗时 ${formatElapsed(elapsedMs)}`);
-    return { committed: true, message, batchCount: 1, elapsedMs };
-  }
-
-  log.trace("开始提交流程", {
-    endpoint: config.endpoint,
-    model: config.llm.model,
-  });
-
-  await measure("校验 git 仓库", () => {
-    if (!isGitRepo(repoPath)) {
-      throw new GrcError(
-        "当前目录不是 git 仓库，请确保在 git 仓库中执行，或指定 repoPath。",
-        "NOT_GIT_REPO",
-      );
-    }
-  });
-
   // 输出槽按调用作用域装配，退出时还原，避免跨调用污染。
   const previousSink = request.onProgress
     ? setProgressSink(request.onProgress)
     : null;
   try {
+    await measure("校验 git 仓库", () => {
+      if (!isGitRepo(repoPath)) {
+        throw new GrcError(
+          "当前目录不是 git 仓库，请确保在 git 仓库中执行，或指定 repoPath。",
+          "NOT_GIT_REPO",
+        );
+      }
+    });
     await measure("暂存变更", () => stageChanges(!!stagedOnly, repoPath));
-    await measure("文件审查门禁", () => runReviewGate(request, repoPath));
+
+    if (config.apiKey) {
+      log.trace("开始提交流程", {
+        endpoint: config.endpoint,
+        model: config.llm.model,
+      });
+      await measure("文件审查门禁", () => runReviewGate(request, repoPath));
+    } else {
+      emitProgress("未配置 LLM，使用规则化模式生成提交信息...\n");
+      emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
+      log.debug("apiKey 为空，跳过依赖 LLM 的审查门禁");
+    }
 
     const diff = await measure(
       "提取暂存 diff",
@@ -238,30 +252,37 @@ export async function executeCommit(
     let message: string;
     let batchCount = 1;
     let isFallback = false;
-    try {
-      const result = await measure("生成提交信息", () =>
-        generateCommitMessageBatched(diff, config),
+    if (!config.apiKey) {
+      // P1：无 API Key，规则化生成
+      message = await measure("生成提交信息（规则化）", () =>
+        tryFallback(repoPath),
       );
-      message = result.message;
-      batchCount = result.batchCount;
-      if (batchCount > 1) {
-        emitProgress(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
-      }
-    } catch (err) {
-      // P2：LLM 调用失败后走兜底——捕获 VALIDATION_FAILED / LLM_FAILED
-      if (
-        err instanceof GrcError &&
-        (err.code === "VALIDATION_FAILED" || err.code === "LLM_FAILED")
-      ) {
-        emitProgress("LLM 生成失败，降级为规则化模式...\n");
-        emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
-        const fallback = await measure("生成提交信息（降级兜底）", () =>
-          tryFallback(repoPath),
+      isFallback = true;
+    } else {
+      try {
+        const result = await measure("生成提交信息", () =>
+          generateCommitMessageBatched(diff, config),
         );
-        message = fallback.message;
-        isFallback = true;
-      } else {
-        throw err;
+        message = result.message;
+        batchCount = result.batchCount;
+        if (batchCount > 1) {
+          emitProgress(`  (已将 diff 分为 ${batchCount} 批次处理并合并)\n`);
+        }
+      } catch (err) {
+        // P2：LLM 调用失败后走兜底——捕获 VALIDATION_FAILED / LLM_FAILED
+        if (
+          err instanceof GrcError &&
+          (err.code === "VALIDATION_FAILED" || err.code === "LLM_FAILED")
+        ) {
+          emitProgress("LLM 生成失败，降级为规则化模式...\n");
+          emitProgress("  (已降级：提交消息由规则生成，不含 AI 语义分析)\n");
+          message = await measure("生成提交信息（降级兜底）", () =>
+            tryFallback(repoPath),
+          );
+          isFallback = true;
+        } else {
+          throw err;
+        }
       }
     }
 
@@ -271,8 +292,8 @@ export async function executeCommit(
       );
     }
 
-    await measure("执行 git commit", () =>
-      gitCommit(message, repoPath, noVerify),
+    await measure("提交前校验与 git commit", () =>
+      commitChecked(message, repoPath, noVerify),
     );
 
     const elapsedMs = performance.now() - startTime;

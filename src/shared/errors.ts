@@ -24,6 +24,7 @@ export type GrcErrorCode =
   | "LLM_FAILED" // 大模型调用失败或返回空内容
   | "RATE_LIMITED" // 请求被限流（429），退避重试后仍失败
   | "GIT_FAILED" // git 命令执行失败
+  | "HOOK_BLOCKED" // Git Hook（pre-commit / commit-msg）拒绝本次提交
   | "UNKNOWN";
 
 export class GrcError extends Error {

@@ -1,16 +1,25 @@
+import { COMMIT_TYPES as ALLOWED_TYPES } from "@/shared/limits";
+
+type CommitType = (typeof ALLOWED_TYPES)[number];
+
+/** 每种 type 的释义，type 清单本身以 shared/limits 为唯一来源。 */
+const TYPE_DESCRIPTIONS: Record<CommitType, string> = {
+  feat: "新增功能（语义化版本 MINOR）",
+  fix: "修复缺陷（语义化版本 PATCH）",
+  docs: "仅修改文档，例如 README、API 文档、代码注释",
+  style: "仅调整代码样式，例如缩进、空格、空行、分号（不改变代码逻辑）",
+  refactor: "重构代码，例如调整代码结构、重命名变量或函数（不改变外部行为）",
+  perf: "优化性能，例如提升执行效率、降低内存占用",
+  test: "修改测试用例，例如新增、删除、调整测试代码",
+  build: "修改构建系统或外部依赖，例如依赖库、外部接口、Node 版本",
+  ci: "修改持续集成配置，例如 GitHub Actions、Jenkins、Travis 工作流",
+  chore: "修改非业务性内容，例如构建流程、工具配置、脚本",
+  revert: "回退提交（脚注中必须包含被回退的提交哈希）",
+};
+
 /** Conventional Commits 类型参考表（提交类三套提示词共用，单一来源）。 */
 export const COMMIT_TYPES = `<commit_types>
-- feat: 新增功能（语义化版本 MINOR）
-- fix: 修复缺陷（语义化版本 PATCH）
-- docs: 仅修改文档，例如 README、API 文档、代码注释
-- style: 仅调整代码样式，例如缩进、空格、空行、分号（不改变代码逻辑）
-- refactor: 重构代码，例如调整代码结构、重命名变量或函数（不改变外部行为）
-- perf: 优化性能，例如提升执行效率、降低内存占用
-- test: 修改测试用例，例如新增、删除、调整测试代码
-- build: 修改构建系统或外部依赖，例如依赖库、外部接口、Node 版本
-- ci: 修改持续集成配置，例如 GitHub Actions、Jenkins、Travis 工作流
-- chore: 修改非业务性内容，例如构建流程、工具配置、脚本
-- revert: 回退提交（脚注中必须包含被回退的提交哈希）
+${ALLOWED_TYPES.map((type) => `- ${type}: ${TYPE_DESCRIPTIONS[type]}`).join("\n")}
 </commit_types>`;
 
 /**

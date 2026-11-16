@@ -9,5 +9,6 @@ dist/
 package-lock.json
 tmp/*
 temp/*
+coverage/
 gittest/*
 git-repo-comitter-*.tgz

@@ -74,7 +74,11 @@ if (existsSync(entry)) {
       apiKey: "k",
       endpoint: "https://example.com/v1",
     });
-    if (cfg && cfg.apiKey === "k" && cfg.endpoint === "https://example.com/v1") {
+    if (
+      cfg &&
+      cfg.apiKey === "k" &&
+      cfg.endpoint === "https://example.com/v1"
+    ) {
       pass("resolveConfig 可调用且正确收敛配置");
     } else {
       fail(`resolveConfig 返回结果不符合预期：${JSON.stringify(cfg)}`);
@@ -89,7 +93,9 @@ if (existsSync(entry)) {
     if (ok && ok.valid === true) {
       pass("validateCommitMessage 可校验合规消息");
     } else {
-      fail(`validateCommitMessage 对合规消息返回非预期结果：${JSON.stringify(ok)}`);
+      fail(
+        `validateCommitMessage 对合规消息返回非预期结果：${JSON.stringify(ok)}`,
+      );
     }
     const bad = mod.validateCommitMessage("");
     if (bad && bad.valid === false) {

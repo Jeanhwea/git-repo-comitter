@@ -33,6 +33,7 @@ const EXIT_CODES: Record<GrcErrorCode, number> = {
   LLM_FAILED: 1,
   RATE_LIMITED: 1,
   GIT_FAILED: 1,
+  HOOK_BLOCKED: 1,
   UNKNOWN: 1,
 };
 
@@ -62,6 +63,7 @@ program
     "-n, --no-verify",
     "跳过 Git Hook 校验（等价于 git commit --no-verify）",
   )
+  .option("--no-review", "跳过提交前的新增文件审查门禁（Q4）")
   .option("-V, --verbose", "输出详细进度日志（debug 级别）")
   .option("--debug", "同 --verbose，输出 debug 级别日志")
   .option("--trace", "输出最详细的追踪日志（trace 级别）");
@@ -70,6 +72,8 @@ interface CliOptions {
   stagedOnly?: boolean;
   // commander 的 --no-verify 是负向选项：未传为 true，传入后为 false。
   verify?: boolean;
+  // commander 的 --no-review 未传为 true，传入后为 false。
+  review?: boolean;
   verbose?: boolean;
   debug?: boolean;
   trace?: boolean;
@@ -99,6 +103,7 @@ program.action((options: CliOptions) => {
   runCommit({
     stagedOnly: options.stagedOnly ?? false,
     noVerify: options.verify === false,
+    review: options.review !== false,
   }).catch(handleCliError);
 });
 

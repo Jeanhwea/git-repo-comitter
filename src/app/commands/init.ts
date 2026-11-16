@@ -1,7 +1,7 @@
 /**
  * 应用层 —— init 命令：交互式写入 LLM 配置。
  */
-import { question } from "@/app/cli/input";
+import { hiddenQuestion, question } from "@/app/cli/input";
 import { DEFAULT_CONFIG } from "@/config/loader";
 import { loadUserConfigFile, saveUserConfig } from "@/config/user-file";
 import { CliError } from "@/shared/errors";
@@ -36,11 +36,11 @@ export async function runInit(): Promise<void> {
     defaultEndpoint,
   );
   const model = await ask("模型名称", defaultModel, defaultModel);
-  const apiKey = await ask(
-    "API Key",
-    existing.apiKey ? "***" : "（必填）",
-    existing.apiKey ?? "",
+  // API Key 不回显，避免明文留在终端滚动记录或录屏里。
+  const enteredKey = await hiddenQuestion(
+    `API Key（直接回车沿用已配置 Key）：`,
   );
+  const apiKey = enteredKey || (existing.apiKey ?? "");
 
   if (!apiKey) {
     throw new CliError("API Key 不能为空。");

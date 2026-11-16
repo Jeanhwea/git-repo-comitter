@@ -28,12 +28,14 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: false,
     rollupOptions: {
+      // Node 外部依赖；浏览器构建只保留 openai，CLI 额外包含 commander。
       external: [
         "openai",
         "fs",
         "path",
         "os",
         "child_process",
+        "readline",
         "readline/promises",
       ],
     },

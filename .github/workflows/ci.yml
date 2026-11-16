@@ -20,9 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # pnpm 版本由 package.json 的 packageManager 提供，不在此重复声明。
       - uses: pnpm/action-setup@v6
-        with:
-          version: "10"
 
       - uses: actions/setup-node@v6
         with:
@@ -44,9 +43,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # pnpm 版本由 package.json 的 packageManager 提供，不在此重复声明。
       - uses: pnpm/action-setup@v6
-        with:
-          version: "10"
 
       - uses: actions/setup-node@v6
         with:
@@ -59,5 +57,12 @@ jobs:
       - name: Type check
         run: pnpm check
 
+      - name: Rule reconciliation
+        run: pnpm check:rules
+
+      - name: Test with coverage
+        run: pnpm test:coverage
+
+      # 与发布共用同一条构建链：覆盖 cli/browser/types 产物与浏览器入口护栏。
       - name: Build
-        run: pnpm vite build
+        run: pnpm build

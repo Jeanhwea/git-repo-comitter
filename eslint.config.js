@@ -65,7 +65,14 @@ export default [
       "import-x/order": [
         "error",
         {
-          groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            "parent",
+            "sibling",
+            "index",
+          ],
           "newlines-between": "always",
           alphabetize: { order: "asc", caseInsensitive: true },
         },
@@ -95,6 +102,40 @@ export default [
       // 关闭与 tsdoc 职责重叠、或无法解析 TS 类型易误报的规则
       "jsdoc/check-syntax": "off",
       "jsdoc/no-undefined-types": "off",
+    },
+  },
+
+  // tests / 构建脚本 / 配置文件：基础规则，不施加 src 的 JSDoc 与 import 顺序契约。
+  {
+    files: [
+      "tests/**/*.ts",
+      "scripts/**/*.mjs",
+      "*.config.ts",
+      "eslint.config.js",
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+      parser: parserTs,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": pluginTs,
+    },
+    rules: {
+      ...pluginJs.configs.recommended.rules,
+      ...pluginTs.configs.recommended.rules,
+      ...eslintConfigPrettier.rules,
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      // 测试与构建脚本常需 mock 动态结构，不强制具体类型。
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ];

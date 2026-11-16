@@ -2,19 +2,21 @@
  * 用户消息的构造。与系统提示词保持同一套 XML 标记风格：
  * 把 diff、草稿这类不可信内容包进标记内，明确其"数据"身份，降低被模型当作指令执行的风险。
  */
+import { escapeXmlText } from "../escape";
 
 /**
  * 包裹完整 diff。
  * @param diff - 待提交的完整 diff 文本。
  */
-export const wrapDiff = (diff: string): string => `<diff>\n${diff}\n</diff>`;
+export const wrapDiff = (diff: string): string =>
+  `<diff>\n${escapeXmlText(diff)}\n</diff>`;
 
 /**
  * 包裹分批场景下的部分 diff。
  * @param diff - 当前批次的 diff 片段。
  */
 export const wrapPartialDiff = (diff: string): string =>
-  `<diff_part>\n${diff}\n</diff_part>`;
+  `<diff_part>\n${escapeXmlText(diff)}\n</diff_part>`;
 
 /**
  * 包裹单条草稿，index 从 1 开始。
@@ -22,7 +24,7 @@ export const wrapPartialDiff = (diff: string): string =>
  * @param draft - 该批次的草稿正文。
  */
 export const wrapDraft = (index: number, draft: string): string =>
-  `<draft index="${index}">\n${draft}\n</draft>`;
+  `<draft index="${index}">\n${escapeXmlText(draft)}\n</draft>`;
 
 /**
  * 包裹草稿集合（若干条已包裹好的草稿文本）。

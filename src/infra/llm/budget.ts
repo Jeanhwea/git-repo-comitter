@@ -10,8 +10,11 @@ import { estimateTokens } from "@/shared/tokens";
 /** 消息包裹、角色标记等结构性开销的保守估计。 */
 const FRAMING_OVERHEAD = 200;
 
-/** 预留的安全余量比例，抵消 token 估算误差。 */
-const SAFETY_MARGIN_RATIO = 0.05;
+/** 预留的安全余量比例，抵消 token 估算误差（W6 提高到 15%）。 */
+const SAFETY_MARGIN_RATIO = 0.15;
+
+/** 尾部最多额外保留的草稿数，避免整段尾部上下文丢失。 */
+const MAX_TAIL_DRAFTS = 2;
 
 /**
  * 计算在给定系统提示词下，单次请求可用于正文内容的 token 上限。
@@ -31,23 +34,45 @@ export function effectiveLimit(
   return Math.floor(grossBudget * (1 - SAFETY_MARGIN_RATIO));
 }
 
+/** 按预算裁剪后的草稿集合：头部与尾部保留，中间省略。 */
+export interface FittedDrafts {
+  head: string[];
+  tail: string[];
+  omitted: number;
+}
+
 /**
- * 按 token 预算从头挑选片段：返回可容纳的片段与被丢弃的数量。
- * 顺序敏感（草稿按批次排列），一旦某片段放不下即停止，保证不出现中间空洞。
- * @param parts - 待挑选的片段，按给定顺序参与挑选。
- * @param limit - 累计 token 上限，超出即停止。
+ * 按 token 预算挑选草稿：先从头保留，再从尾部补留少量片段，
+ * 避免旧实现「只留前部、尾部整段丢失」的问题（S02 与实现口径统一）。
+ * @param parts - 草稿片段，按批次顺序排列。
+ * @param limit - 累计 token 上限。
  */
-export function fitWithinBudget(
+export function fitDraftsWithinBudget(
   parts: string[],
   limit: number,
-): { kept: string[]; omitted: number } {
+): FittedDrafts {
   let total = 0;
-  for (const [i, part] of parts.entries()) {
-    const cost = estimateTokens(part);
-    if (total + cost > limit) {
-      return { kept: parts.slice(0, i), omitted: parts.length - i };
-    }
+  let headEnd = 0;
+  while (headEnd < parts.length) {
+    const cost = estimateTokens(parts[headEnd] ?? "");
+    if (total + cost > limit) break;
     total += cost;
+    headEnd++;
   }
-  return { kept: parts, omitted: 0 };
+
+  let tailStart = parts.length;
+  while (tailStart > headEnd && parts.length - tailStart < MAX_TAIL_DRAFTS) {
+    const cost = estimateTokens(parts[tailStart - 1] ?? "");
+    if (total + cost > limit) break;
+    total += cost;
+    tailStart--;
+  }
+
+  const head = parts.slice(0, headEnd);
+  const tail = parts.slice(tailStart);
+  return {
+    head,
+    tail,
+    omitted: parts.length - head.length - tail.length,
+  };
 }

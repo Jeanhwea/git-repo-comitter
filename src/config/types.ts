@@ -15,6 +15,10 @@ export interface AppConfig {
   llm: LLMConfig;
   apiKey: string;
   endpoint: string;
+  /** 单次 LLM 请求超时（毫秒）；缺省取 shared/limits 的默认值。 */
+  timeoutMs?: number;
+  /** SDK 内部重试次数；默认 0，避免与项目自己的限流退避叠加成双重重试。 */
+  maxRetries?: number;
 }
 
 /**
@@ -25,4 +29,6 @@ export interface UserConfig {
   apiKey?: string;
   endpoint?: string;
   llm?: Partial<LLMConfig>;
+  timeoutMs?: number;
+  maxRetries?: number;
 }
