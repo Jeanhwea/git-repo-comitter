@@ -10,6 +10,7 @@ import {
   MAX_BODY_LINE_LENGTH,
   MAX_HEADER_LENGTH,
 } from "@/shared/commit-limits";
+import { COMMIT_RULE_REFERENCE } from "@/shared/commit-rules";
 
 import { COMMIT_TYPES, TYPE_SELECTION_RULE } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
@@ -38,6 +39,7 @@ ${LANGUAGE_RULES}
 ${COMMIT_TYPES}
 
 <rules>
+${COMMIT_RULE_REFERENCE}
 ${COMMIT_FORMAT_RULES}
 6. ${TYPE_SELECTION_RULE}
 7. description 禁止使用「修改了」「更新了」等无信息量的措辞。

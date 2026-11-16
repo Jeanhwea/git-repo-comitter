@@ -31,6 +31,7 @@
     "lint": "eslint src/ tests/ scripts/ *.config.ts eslint.config.js",
     "lint:fix": "eslint src/ tests/ scripts/ *.config.ts eslint.config.js --fix",
     "check": "tsc --noEmit",
+    "check:rules": "node scripts/check-rules.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

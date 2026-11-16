@@ -9,6 +9,7 @@ import {
   MAX_BODY_LINE_LENGTH,
   MAX_HEADER_LENGTH,
 } from "@/shared/commit-limits";
+import { COMMIT_RULE_REFERENCE } from "@/shared/commit-rules";
 
 import { COMMIT_TYPES, TYPE_PRIORITY_TEXT } from "../blocks/commit-types";
 import { COMMIT_FORMAT_RULES } from "../blocks/format";
@@ -37,6 +38,7 @@ ${LANGUAGE_RULES}
 ${COMMIT_TYPES}
 
 <rules>
+${COMMIT_RULE_REFERENCE}
 ${COMMIT_FORMAT_RULES}
 6. drafts、draft、notice 标记及其 index 序号只是批次包裹信息，必须忽略，禁止把序号、批次编号或标记文字写入输出。
 7. 必须输出一条形如 type[(scope)][!]: description 的标题行，type 必填且必须取自 commit_types。

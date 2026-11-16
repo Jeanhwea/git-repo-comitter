@@ -8,25 +8,15 @@
  * 校验失败时的修复提示文本已归入 prompts/commit-message/repair.ts（I06 的 P4）。
  */
 import {
+  COMMIT_TYPES,
   MAX_BODY_BULLETS,
   MAX_BODY_LINE_LENGTH,
   MAX_HEADER_LENGTH,
-} from "@/shared/commit-limits";
+} from "@/shared/limits";
+import { displayWidth } from "@/shared/text";
 import type { ValidationOutcome } from "@/shared/validation";
 
-const ALLOWED_TYPES = new Set([
-  "feat",
-  "fix",
-  "docs",
-  "style",
-  "refactor",
-  "perf",
-  "test",
-  "build",
-  "ci",
-  "chore",
-  "revert",
-]);
+const ALLOWED_TYPES: ReadonlySet<string> = new Set<string>(COMMIT_TYPES);
 
 const FULL_WIDTH_COLON = "：";
 
@@ -63,6 +53,19 @@ const EMOJI_PATTERN =
   /[\u{1F000}-\u{1FAFF}\u{2190}-\u{21FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
 
 const CJK_PATTERN = /[\u4e00-\u9fff]/;
+
+/** 脚注行在冒号/井号后紧跟的值，用于 D2「同行并列」判定。 */
+const TRAILER_VALUE_PATTERN = /^[A-Za-z][A-Za-z0-9 -]*(?:: | #)(\S.*)$/;
+
+/** E3：中文紧贴标识符，说明专有名词被翻译或未与中文分隔。 */
+const TRANSLATED_IDENTIFIER =
+  /[\u4e00-\u9fff][A-Za-z][A-Za-z0-9]*[\u4e00-\u9fff]/;
+const TRANSLATED_PATH = /[\u4e00-\u9fff]+\/[\u4e00-\u9fff]+/;
+
+/** E4：繁体常用字与网络用语（L2 告警，不拦截）。 */
+const TRADITIONAL_CHARS = /[複實體網頁檔案檢視錄據點樣萬與優聯繫]/;
+const SLANG = /(?:yyds|u1s1|awsl|绝绝子|家人们|栓Q)/i;
+const HALF_WIDTH_IN_CJK = /[\u4e00-\u9fff][,.!?][\u4e00-\u9fff]/;
 
 /** 解析出的标题字段。解析失败时为 undefined，此时只保留格式类命中项。 */
 interface HeaderFields {
@@ -150,6 +153,9 @@ function validateHeader(header: string): {
   }
 
   const trimmedDescription = description.trim();
+  if (bang && trimmedDescription === "") {
+    reasons.push("[A5] 破坏性标记 ! 不能替代 description，标题仍须完整可读");
+  }
   if (trimmedDescription === "") {
     reasons.push("[A6] description 不允许为空");
   } else if (/[。.]$/.test(trimmedDescription)) {
@@ -158,9 +164,9 @@ function validateHeader(header: string): {
     );
   }
 
-  if (header.length > MAX_HEADER_LENGTH) {
+  if (displayWidth(header) > MAX_HEADER_LENGTH) {
     reasons.push(
-      `[A8] 标题行超过 ${MAX_HEADER_LENGTH} 字符限制 (当前 ${header.length} 字符)，请压缩 description，禁止直接截断`,
+      `[A8] 标题行超过 ${MAX_HEADER_LENGTH} 个半角字符宽度的限制 (当前 ${displayWidth(header)}，中文按 2 计)，请压缩 description，禁止直接截断`,
     );
   }
 
@@ -221,6 +227,8 @@ export function validateCommitMessage(
   const candidates: string[] = [];
   const malformed: string[] = [];
   const brokenTrailers: string[] = [];
+  const bulletTrailers: string[] = [];
+  const joinedTrailers: string[] = [];
 
   for (const rawLine of contentLines) {
     const line = rawLine.trim();
@@ -228,13 +236,16 @@ export function validateCommitMessage(
 
     if (line.startsWith(BULLET_PREFIX)) {
       bullets.push(line);
-      // "- Refs: xxx" 把脚注写成了要点，仍计入脚注参与 D3 / D4 判定。
+      // "- Refs: xxx" 违反 D2：不计入脚注，避免 D3 / D4 被错误放行。
       const inner = line.slice(BULLET_PREFIX.length).trim();
-      if (TRAILER_PATTERN.test(inner)) footers.push(inner);
+      if (TRAILER_PATTERN.test(inner)) bulletTrailers.push(line);
       continue;
     }
 
     if (TRAILER_PATTERN.test(line)) {
+      // "Refs: a, b" 属于脚注同行并列，同样违反 D2。
+      const value = line.match(TRAILER_VALUE_PATTERN)?.[1] ?? "";
+      if (/,\s*\S/.test(value)) joinedTrailers.push(line);
       footers.push(line);
       continue;
     }
@@ -285,6 +296,13 @@ export function validateCommitMessage(
     );
   }
 
+  const d2Violations = [...bulletTrailers, ...joinedTrailers];
+  if (d2Violations.length > 0) {
+    reasons.push(
+      `[D2] 脚注必须逐行排列，禁止加项目符号或同行并列（违规行："${snippet(d2Violations[0] ?? "")}"）`,
+    );
+  }
+
   if (malformed.length > 0) {
     reasons.push(
       `[C2] 正文每行必须是以 "${BULLET_PREFIX.trim()} " 开头的要点或 git trailer 脚注，禁止 Markdown 标题、加粗、星号列表与不换行长段落（违规行："${snippet(malformed[0] ?? "")}"）`,
@@ -298,11 +316,11 @@ export function validateCommitMessage(
   }
 
   const longLines = bodyLines.filter(
-    (line) => line.length > MAX_BODY_LINE_LENGTH,
+    (line) => displayWidth(line) > MAX_BODY_LINE_LENGTH,
   );
   if (longLines.length > 0) {
     reasons.push(
-      `[C4] 正文行超出 ${MAX_BODY_LINE_LENGTH} 字符限制 (最长 ${Math.max(...longLines.map((line) => line.length))} 字符): ${longLines.slice(0, 3).map(snippet).join(", ")}`,
+      `[C4] 正文行超出 ${MAX_BODY_LINE_LENGTH} 个半角字符宽度的限制 (最长 ${Math.max(...longLines.map((line) => displayWidth(line)))}，中文按 2 计): ${longLines.slice(0, 3).map(snippet).join(", ")}`,
     );
   }
 
@@ -336,6 +354,36 @@ export function validateCommitMessage(
   const emojiLine = lines.find((line) => EMOJI_PATTERN.test(line));
   if (emojiLine) {
     warnings.push(`[E2] 输出禁止使用 emoji（发现于："${snippet(emojiLine)}"）`);
+  }
+
+  // E3 / E4 属 L2：只给出启发式告警，不因可能的误判拦住提交。
+  if (fields) {
+    const translated =
+      fields.description.match(TRANSLATED_IDENTIFIER) ??
+      fields.description.match(TRANSLATED_PATH);
+    if (translated) {
+      warnings.push(
+        `[E3] "${snippet(translated[0])}" 疑似把标识符或路径译成了中文，代码标识符、文件名、命令与专有名词应保留原文`,
+      );
+    }
+  }
+  const traditionalLine = lines.find((line) => TRADITIONAL_CHARS.test(line));
+  if (traditionalLine) {
+    warnings.push(
+      `[E4] 疑似出现繁体字（"${snippet(traditionalLine)}"），输出语言应为简体中文`,
+    );
+  }
+  const slangLine = lines.find((line) => SLANG.test(line));
+  if (slangLine) {
+    warnings.push(
+      `[E4] 疑似使用网络用语（"${snippet(slangLine)}"），请改为书面表达`,
+    );
+  }
+  const halfWidthLine = lines.find((line) => HALF_WIDTH_IN_CJK.test(line));
+  if (halfWidthLine) {
+    warnings.push(
+      `[E4] 中文语句中疑似使用半角标点（"${snippet(halfWidthLine)}"），描述文字应使用全角标点`,
+    );
   }
 
   if (reasons.length > 0) {

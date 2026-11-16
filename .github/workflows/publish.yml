@@ -40,6 +40,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm check
+      - run: pnpm check:rules
       - run: pnpm test:coverage
       - run: pnpm build
 

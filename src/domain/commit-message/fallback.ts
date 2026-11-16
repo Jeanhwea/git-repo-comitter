@@ -13,12 +13,10 @@
  * - 行宽约束与 checker.ts 一致 → 通过校验
  */
 import type { ChangeSet, FileChange } from "@/infra/git/changes";
-import {
-  MAX_BODY_LINE_LENGTH,
-  MAX_HEADER_LENGTH,
-} from "@/shared/commit-limits";
 import { GrcError } from "@/shared/errors";
+import { MAX_BODY_LINE_LENGTH, MAX_HEADER_LENGTH } from "@/shared/limits";
 import { createLogger } from "@/shared/logger";
+import { displayWidth, truncateToWidth } from "@/shared/text";
 
 import { validateCommitMessage } from "./checker";
 
@@ -225,7 +223,7 @@ function buildBody(files: FileChange[]): string {
     let line = prefix;
     for (const name of names) {
       const separator = line === prefix ? "" : "、";
-      if (line.length + separator.length + name.length > MAX_BODY_LINE_LENGTH) {
+      if (displayWidth(line + separator + name) > MAX_BODY_LINE_LENGTH) {
         line += `${separator}…`;
         break;
       }
@@ -247,9 +245,9 @@ function buildBody(files: FileChange[]): string {
  * @param header - 待截断的 header 字符串
  */
 function truncateHeader(header: string): string {
-  if (header.length <= MAX_HEADER_LENGTH) return header;
+  if (displayWidth(header) <= MAX_HEADER_LENGTH) return header;
   // 用省略号而非三个点：checker 的 A6 禁止标题以句号结尾，"..." 会被判违规。
-  return header.slice(0, MAX_HEADER_LENGTH - 1) + "…";
+  return truncateToWidth(header, MAX_HEADER_LENGTH - 1) + "…";
 }
 
 /* ------------------------------------------------------------------ */
