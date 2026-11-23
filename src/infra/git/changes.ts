@@ -1,203 +1,27 @@
 /**
- * 文件变更模块：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
+ * 文件变更模块入口：建模并采集「哪些文件变了、怎么变的」，与「文本 diff」解耦。
  * 以 ChangeSet 作为一等模型，供 diff 组装层与审查门禁共享。
  *
  * F05：采集动作新增可选 cwd，使库调用方能指定目标仓库（commit(\{ repoPath \})）。
+ * I08 W6：采集口径从「只产出 added/modified」扩到完整建模 added/modified/
+ * deleted/renamed/submodule；状态来自 --raw 的 XY 状态码与文件模式，增删行数
+ * 与二进制标记仍来自 --numstat，两者按路径关联。
+ *
+ * 本文件只做公共 API 的汇总导出，实现按职责拆到 ./changes/ 子模块：
+ * - types.ts       共享类型模型（ChangeStatus / FileChange / ChangeSet ...）
+ * - staged-stats.ts --raw / --numstat 解析层
+ * - change-set.ts  变更集组装与 hasStagedChanges / hasUnstagedChanges
+ * - new-files.ts   新内容清单与 readNewFileContents
+ *
+ * 保持此入口的导出签名不变，vi.mock("\@/infra/git/changes") 的调用方零改动。
  */
-import { execGit } from "./executor";
 
-/**
- * 单个文件的变更类型。
- * 注意：numstat 只给出增删行数，无法区分删除与重命名，
- * 因此当前采集结果只会出现 added 与 modified 两种。
- */
-export type ChangeStatus = "added" | "modified" | "deleted" | "renamed";
+export type { ChangeStatus, FileChange, ChangeSet } from "./changes/types";
 
-export interface FileChange {
-  path: string;
-  status: ChangeStatus;
-  isBinary: boolean;
-  additions: number;
-  deletions: number;
-}
+export {
+  getStagedChangeSet,
+  hasStagedChanges,
+  hasUnstagedChanges,
+} from "./changes/change-set";
 
-export interface ChangeSet {
-  /** 暂存区内的全部变更文件。 */
-  files: FileChange[];
-  /** 新增文件（status === "added"），供提交前审查使用。 */
-  newFiles: FileChange[];
-  /** 二进制文件（isBinary === true），diff 中需被排除。 */
-  binaryFiles: FileChange[];
-  /** 暂存区是否已有变更。 */
-  hasStagedChanges: boolean;
-  /** 是否还有未暂存的变更（含未跟踪的新文件），需要 git add 才会进入提交。 */
-  hasUnstagedChanges: boolean;
-}
-
-type NewFileScope = "staged" | "unstaged";
-
-function listNewFiles(scope: NewFileScope, cwd?: string): string[] {
-  const args =
-    scope === "staged"
-      ? ["diff", "--cached", "--name-status", "--diff-filter=A"]
-      : ["diff", "--name-status", "--diff-filter=A"];
-  const output = execGit(args, { allowFailure: true, cwd });
-  if (!output.trim()) return [];
-  return output
-    .split("\n")
-    .filter((line) => line.startsWith("A\t"))
-    .map((line) => line.slice(2).trim())
-    .filter(Boolean);
-}
-
-function listStagedNewFiles(cwd?: string): string[] {
-  return listNewFiles("staged", cwd);
-}
-
-function listUnstagedNewFiles(cwd?: string): string[] {
-  return listNewFiles("unstaged", cwd);
-}
-
-/**
- * 读取新增文件的内容；二进制文件与读不到的内容以占位文本代替。
- * @param onlyStaged - true 时只读取已暂存的新文件，false 时包含未跟踪文件。
- * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
- */
-export function readNewFileContents(
-  onlyStaged: boolean = false,
-  cwd?: string,
-): { path: string; content: string }[] {
-  const stagedNewFiles = listStagedNewFiles(cwd);
-  const stagedSet = new Set(stagedNewFiles);
-  const newFiles = onlyStaged
-    ? stagedNewFiles
-    : [
-        ...stagedNewFiles,
-        ...listUnstagedNewFiles(cwd).filter((f) => !stagedSet.has(f)),
-      ];
-
-  const binarySet = new Set(
-    getStagedFileStats(cwd)
-      .filter((s) => s.isBinary)
-      .map((s) => s.path),
-  );
-
-  return newFiles.map((filePath) => {
-    if (binarySet.has(filePath)) {
-      return { path: filePath, content: "[二进制文件，内容已省略]" };
-    }
-    const content = execGit(["show", `:${filePath}`], {
-      allowFailure: true,
-      cwd,
-    });
-    // 兜底：通过 NULL 字节检测二进制内容
-    if (content.includes("\0")) {
-      return { path: filePath, content: "[二进制文件，内容已省略]" };
-    }
-    return { path: filePath, content };
-  });
-}
-
-export function hasStagedChanges(cwd?: string): boolean {
-  // 与变更集同源（numstat），避免出现「是否有暂存变更」的两种判定口径。
-  return getStagedFileStats(cwd).length > 0;
-}
-
-/**
- * 是否存在尚未暂存的变更：未暂存的修改/删除，或未被跟踪的新文件。
- * 已暂存（X 列非空、Y 列为空格）的变更不算在内，因为 git add . 对此是空操作。
- * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
- */
-export function hasUnstagedChanges(cwd?: string): boolean {
-  const output = execGit(["status", "--porcelain"], {
-    allowFailure: true,
-    cwd,
-  });
-  if (!output.trim()) return false;
-  return output.split("\n").some((line) => line.length >= 2 && line[1] !== " ");
-}
-
-interface StagedFileStat {
-  path: string;
-  isBinary: boolean;
-  additions: number;
-  deletions: number;
-}
-
-/**
- * numstat 中 "-" 表示二进制文件（无行统计）。
- * @param add - numstat 的第一列（新增行数，"-" 表示二进制文件）。
- * @param del - numstat 的第二列（删除行数，"-" 表示二进制文件）。
- * @param path - 文件路径（重命名/复制取新路径）。
- */
-function toStat(add: string, del: string, path: string): StagedFileStat {
-  return {
-    path,
-    isBinary: add === "-" || del === "-",
-    additions: add === "-" ? 0 : Number(add),
-    deletions: del === "-" ? 0 : Number(del),
-  };
-}
-
-function getStagedFileStats(cwd?: string): StagedFileStat[] {
-  const output = execGit(["diff", "--cached", "-z", "--numstat"], {
-    allowFailure: true,
-    cwd,
-  });
-  if (!output.trim()) return [];
-
-  // -z 下 --numstat 以 NUL 分隔字段：
-  //   普通条目："added\tdeleted\tpath"
-  //   重命名条目："added\tdeleted\t" + NUL + oldpath + NUL + newpath
-  const stats: StagedFileStat[] = [];
-  const fields = output.split("\0");
-  let i = 0;
-  while (i < fields.length) {
-    const field = fields[i];
-    if (!field) {
-      i++;
-      continue;
-    }
-    // 重命名/复制：第二个制表符后路径为空，新旧路径作为后续两个字段给出。
-    const renameEntry = field.match(/^(\d+|-)\t(\d+|-)\t$/);
-    if (renameEntry) {
-      const newPath = fields[i + 2];
-      if (newPath) {
-        stats.push(toStat(renameEntry[1] ?? "", renameEntry[2] ?? "", newPath));
-      }
-      i += 3;
-      continue;
-    }
-    // 普通条目：三个字段都在同一个 NUL 分隔块内。
-    const entry = field.match(/^(\d+|-)\t(\d+|-)\t(.+)$/s);
-    if (entry) {
-      stats.push(toStat(entry[1] ?? "", entry[2] ?? "", entry[3] ?? ""));
-    }
-    i++;
-  }
-  return stats;
-}
-
-/**
- * 采集当前暂存区的完整变更集。供审查门禁、提交流程等以结构化方式消费，
- * 也可直接调用 getNewFileContents / hasStagedChanges / hasUnstagedChanges。
- * @param cwd - 目标仓库路径，缺省为进程当前工作目录。
- */
-export function getStagedChangeSet(cwd?: string): ChangeSet {
-  const stats = getStagedFileStats(cwd);
-  const addedPaths = new Set(listStagedNewFiles(cwd));
-  const files: FileChange[] = stats.map((s) => ({
-    path: s.path,
-    status: addedPaths.has(s.path) ? "added" : "modified",
-    isBinary: s.isBinary,
-    additions: s.additions,
-    deletions: s.deletions,
-  }));
-  return {
-    files,
-    newFiles: files.filter((f) => f.status === "added"),
-    binaryFiles: files.filter((f) => f.isBinary),
-    hasStagedChanges: files.length > 0,
-    hasUnstagedChanges: hasUnstagedChanges(cwd),
-  };
-}
+export { readNewFileContents } from "./changes/new-files";

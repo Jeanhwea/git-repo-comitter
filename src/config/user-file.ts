@@ -6,7 +6,14 @@
  *
  * 依赖方向：本模块属 config 层，仅依赖 shared（同层规则），不依赖其他。
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
 
@@ -27,9 +34,22 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * 读取用户配置文件 ~/.grc/config.json；文件不存在或解析失败时返回空配置。
  *
  * 解析异常只记 debug 日志：库调用方不应看到意外输出，需要提示的 CLI 可自行开日志级别。
+ * 配置文件含 API Key，权限过宽时给出告警（Windows 的 mode 语义不同，跳过检查）。
  */
 export function loadUserConfigFile(): UserConfig {
   if (!existsSync(USER_CONFIG_PATH)) return {};
+  if (process.platform !== "win32") {
+    try {
+      const mode = statSync(USER_CONFIG_PATH).mode & 0o777;
+      if (mode & 0o077) {
+        log.warn(
+          `配置文件权限过宽（${mode.toString(8)}），API Key 可能被其他用户读取。请执行 chmod 600 ${USER_CONFIG_PATH}`,
+        );
+      }
+    } catch {
+      // 权限探测失败不影响配置读取
+    }
+  }
   try {
     const parsed: unknown = JSON.parse(readFileSync(USER_CONFIG_PATH, "utf-8"));
     if (!isPlainObject(parsed)) {
@@ -51,6 +71,20 @@ export function loadUserConfigFile(): UserConfig {
 }
 
 export function saveUserConfig(config: UserConfig): void {
-  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
+  if (!existsSync(CONFIG_DIR)) {
+    mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  }
+  writeFileSync(USER_CONFIG_PATH, JSON.stringify(config, null, 2), {
+    encoding: "utf-8",
+    mode: 0o600,
+  });
+  if (process.platform !== "win32") {
+    // 文件已存在时 mode 参数不生效，显式收紧旧文件的权限。
+    try {
+      chmodSync(USER_CONFIG_PATH, 0o600);
+      chmodSync(CONFIG_DIR, 0o700);
+    } catch {
+      // 收紧失败不阻断保存；下次读取时会告警提示用户处理
+    }
+  }
 }

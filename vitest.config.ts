@@ -19,5 +19,18 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.ts"],
+      // 不清理 coverage/：避免在 Windows 沙箱中触发批量删除，报告会被覆盖写入。
+      clean: false,
+      thresholds: {
+        lines: 55,
+        statements: 55,
+        functions: 55,
+        branches: 55,
+      },
+    },
   },
 });

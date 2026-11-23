@@ -11,9 +11,8 @@ import {
   groupIntoBatches,
   parseDiffBlocks,
 } from "@/infra/git/diff";
-import { effectiveLimit, fitWithinBudget } from "@/infra/llm/budget";
-import { callWithValidation } from "@/infra/llm/retry";
-import { chatCompletion } from "@/infra/llm/transport/client";
+import { effectiveLimit, fitDraftsWithinBudget } from "@/infra/llm/budget";
+import { callWithRateLimitRetry, callWithValidation } from "@/infra/llm/retry";
 import {
   buildMessages,
   commitMessagePrompt,
@@ -26,13 +25,16 @@ import {
 import { GrcError } from "@/shared/errors";
 import { createLogger } from "@/shared/logger";
 import { emitProgress } from "@/shared/progress";
-import { formatElapsed } from "@/shared/time";
+import { formatElapsed, sleep } from "@/shared/time";
 import { estimateTokens } from "@/shared/tokens";
 
 import { validateCommitMessage } from "./checker";
 import { generateCommitMessage } from "./generator";
 
 const log = createLogger("batch");
+
+/** 相邻批次之间的最小间隔，降低连续请求触发 429 的概率（I07 步骤 6）。 */
+const BATCH_MIN_INTERVAL_MS = 200;
 
 export interface BatchResult {
   message: string;
@@ -53,7 +55,13 @@ async function generateDraft(
     `生成批次草稿，输入约 ${estimateTokens(wrapPartialDiff(diffContent))} tokens`,
   );
   const t0 = performance.now();
-  const content = await chatCompletion(config, messages);
+  // 草稿与最终消息共用同一条限流退避链，避免 429 绕过保护直接冒泡。
+  const content = await callWithRateLimitRetry(
+    config,
+    messages,
+    undefined,
+    "批次草稿",
+  );
   if (!content) {
     throw new GrcError("LLM 在处理分批 diff 时返回了空内容。", "LLM_FAILED");
   }
@@ -95,16 +103,20 @@ export async function generateCommitMessageBatched(
 
   const drafts: string[] = [];
   for (const [i, batch] of batches.entries()) {
+    if (i > 0) await sleep(BATCH_MIN_INTERVAL_MS);
     emitProgress(`  正在处理第 ${i + 1}/${batches.length} 批次...`);
     const draft = await generateDraft(batch.content, config);
     drafts.push(draft);
   }
 
   emitProgress(`  正在合并 ${batches.length} 个批次的提交信息...`);
-  const { kept, omitted } = fitWithinBudget(
+  const fitted = fitDraftsWithinBudget(
     drafts.map((draft, i) => wrapDraft(i + 1, draft)),
     effectiveLimit(config, mergeCommitPrompt.system),
   );
+  // 保留首尾草稿，中间省略；index 仍取原始批次号，便于模型对应上下文。
+  const kept = [...fitted.head, ...fitted.tail];
+  const omitted = fitted.omitted;
 
   if (kept.length === 0) {
     throw new GrcError(

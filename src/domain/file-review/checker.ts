@@ -4,6 +4,7 @@
  * 与 commit-message/checker.ts 对称（I06 的 P6）：原先 reviewValidator 内嵌在
  * reviewer.ts 中与 LLM 调用混写，现独立成校验器，只负责「结果是否可用」。
  */
+import { REVIEW_REASON_MAX_LENGTH } from "@/shared/limits";
 import type { ValidationOutcome } from "@/shared/validation";
 
 export interface ReviewResult {
@@ -12,11 +13,7 @@ export interface ReviewResult {
   reason: string;
 }
 
-/**
- * 校验项与 REVIEW_SYSTEM_PROMPT 的 rules / output 节一一对应
- * （JSON 合法、字段类型、reason 长度），避免坏结果直接流到提交闸门。
- */
-const REASON_MAX_LENGTH = 80;
+/** 校验项与 REVIEW_SYSTEM_PROMPT 的 rules / output 节一一对应，阈值取 shared/limits。 */
 
 export function validateReviewResult(
   content: string,
@@ -55,10 +52,10 @@ export function validateReviewResult(
     return { valid: false, reason: "reason 必须是字符串" };
   }
 
-  if (reason.length > REASON_MAX_LENGTH) {
+  if (reason.length > REVIEW_REASON_MAX_LENGTH) {
     return {
       valid: false,
-      reason: `reason 超过 ${REASON_MAX_LENGTH} 字符限制 (当前 ${reason.length} 字符)`,
+      reason: `reason 超过 ${REVIEW_REASON_MAX_LENGTH} 字符限制 (当前 ${reason.length} 字符)`,
     };
   }
 

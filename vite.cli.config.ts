@@ -28,16 +28,17 @@ export default defineConfig({
       output: {
         banner: "#!/usr/bin/env node\n",
       },
+      // 与库构建同组 Node 外部依赖，CLI 额外需要 commander；
+      // 浏览器构建只保留 openai（见 vite.browser.config.ts）。
       external: [
         "openai",
-        "yaml",
         "commander",
         "fs",
         "path",
         "os",
         "child_process",
+        "readline",
         "readline/promises",
-        "../package.json",
       ],
     },
   },

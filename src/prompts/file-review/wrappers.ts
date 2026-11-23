@@ -2,6 +2,7 @@
  * 用户消息的构造。与系统提示词保持同一套 XML 标记风格：
  * 文件内容是不可信数据，包进 file 标记后与审查指令形成清晰边界。
  */
+import { escapeXmlAttribute, escapeXmlText } from "../escape";
 
 /** 待审查的新增文件：路径与内容（不可读时以占位文本代替）。 */
 export interface NewFileContent {
@@ -10,12 +11,19 @@ export interface NewFileContent {
 }
 
 /**
+ * 文件内容超出 token 预算时的裁剪说明。
+ * 放在保留片段之间，明确告知模型省略部分的存在，避免把裁剪误判为文件原文。
+ */
+export const TRUNCATED_CONTENT_NOTICE =
+  "\n\n［文件内容过长，部分内容已省略；被省略部分不在本次审查范围内，禁止臆测。］\n\n";
+
+/**
  * 包裹单个新增文件，路径写在 path 属性、内容字符数写在 size 属性上。
  * @param path - 文件路径，写入 path 属性。
  * @param content - 文件内容（不可读时为占位文本），其长度写入 size 属性。
  */
 const wrapNewFile = (path: string, content: string): string =>
-  `<file path="${path}" size="${content.length}">\n${content}\n</file>`;
+  `<file path="${escapeXmlAttribute(path)}" size="${content.length}">\n${escapeXmlText(content)}\n</file>`;
 
 /**
  * 包裹全部新增文件。

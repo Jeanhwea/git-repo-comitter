@@ -5,16 +5,20 @@
  * 校验规则已拆到 ./checker，交互提问与取消提交已上移到 app/steps/review（I06 的 P1/P6）。
  */
 import type { AppConfig } from "@/config/types";
+import { effectiveLimit } from "@/infra/llm/budget";
 import { callWithValidation } from "@/infra/llm/retry";
 import {
   type NewFileContent,
   buildMessages,
   reviewPrompt,
   reviewRepairHint,
+  wrapNewFiles,
 } from "@/prompts";
 import { createLogger } from "@/shared/logger";
+import { estimateTokens } from "@/shared/tokens";
 
 import { type ReviewResult, validateReviewResult } from "./checker";
+import { fitFilesWithinBudget } from "./fit";
 
 export type { ReviewResult };
 
@@ -24,9 +28,15 @@ export async function reviewNewFiles(
   newFileContents: NewFileContent[],
   config: AppConfig,
 ): Promise<ReviewResult> {
-  const messages = buildMessages(reviewPrompt, newFileContents);
+  const fittedFiles = fitFilesWithinBudget(
+    newFileContents,
+    effectiveLimit(config, reviewPrompt.system),
+  );
+  const messages = buildMessages(reviewPrompt, fittedFiles);
 
-  log.debug(`开始审查 ${newFileContents.length} 个新增文件`);
+  log.debug(
+    `开始审查 ${fittedFiles.length} 个新增文件，输入约 ${estimateTokens(wrapNewFiles(fittedFiles))} tokens`,
+  );
   const result = await callWithValidation<ReviewResult>(config, messages, {
     label: "审查结果",
     temperatureOverride: 0,

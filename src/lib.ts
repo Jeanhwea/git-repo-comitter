@@ -13,17 +13,38 @@
  * - 不调用 process.exit，失败抛 GrcError，调用方按 code 分支处理。
  */
 
-import { validateCommitMessage as validateMessage } from "@/domain/commit-message/checker";
 import { setupNodeGitExecutor } from "@/node/setup";
 
 // Node 入口：自动装配基于 child_process 的默认 git 执行器（F07）。
 // 浏览器 / WebView 入口不装配，由调用方通过 setGitExecutor 注入实现。
 setupNodeGitExecutor();
 
-// —— 配置 ——
-export { loadDefaultConfig, resolveConfig } from "@/config/loader";
+// —— 两入口共享的公共契约（单一来源，见 src/api/public.ts）——
+export {
+  generateCommitMessage,
+  generateCommitMessageBatched,
+  getProgressSink,
+  GrcError,
+  loadDefaultConfig,
+  resolveConfig,
+  setLogLevel,
+  setLogSink,
+  setProgressSink,
+  validateCommitMessage,
+  type AppConfig,
+  type BatchResult,
+  type GrcErrorCode,
+  type LLMConfig,
+  type LogLevel,
+  type LogRecord,
+  type LogSink,
+  type ProgressSink,
+  type UserConfig,
+  type ValidationResult,
+} from "@/api/public";
+
+// —— Node 专有配置读写 ——
 export { loadUserConfigFile } from "@/config/user-file";
-export type { AppConfig, LLMConfig, UserConfig } from "@/config/types";
 
 // —— 提交流程 ——
 export {
@@ -34,46 +55,6 @@ export {
   type CommitSuccess,
 } from "@/domain/commit-flow";
 
-// —— 提交信息生成与校验 ——
-export {
-  generateCommitMessageBatched,
-  type BatchResult,
-} from "@/domain/commit-message/batch";
-export { generateCommitMessage } from "@/domain/commit-message/generator";
-
-// —— git 基础设施 ——
+// —— git 基础设施（仅 Node 入口）——
 export { getStagedDiff } from "@/infra/git/diff";
 export { gitCommit } from "@/infra/git/repo";
-
-// —— 错误、日志与进度 ——
-export { GrcError, type GrcErrorCode } from "@/shared/errors";
-export {
-  setLogLevel,
-  setLogSink,
-  type LogLevel,
-  type LogRecord,
-  type LogSink,
-} from "@/shared/logger";
-export {
-  getProgressSink,
-  setProgressSink,
-  type ProgressSink,
-} from "@/shared/progress";
-
-/**
- * 提交信息校验结论：成功时携带校验后的消息，失败时携带命中的规则原因。
- *
- * 与内部的 ValidationOutcome 同构，单独在此声明是为了让公共 API 不依赖内部模块，
- * 也避免把 LLM 相关类型卷进对外声明文件（F05：公共 API 契约保持精简）。
- */
-export type ValidationResult =
-  | { valid: true; value: string; warnings?: string[] }
-  | { valid: false; reason?: string };
-
-/**
- * 按 Conventional Commits 约束校验一条提交信息（规则见 docs/feat/F04）。
- * @param content - 待校验的提交信息原文。
- */
-export function validateCommitMessage(content: string): ValidationResult {
-  return validateMessage(content);
-}

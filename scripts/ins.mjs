@@ -42,7 +42,10 @@ const packRes = spawnSync("npm", ["pack"], {
 if (packRes.status !== 0) {
   console.error("[ERROR] npm pack failed");
   if (packRes.error) console.error("  reason:", packRes.error.message);
-  const out = [packRes.stdout, packRes.stderr].filter(Boolean).join("\n").trim();
+  const out = [packRes.stdout, packRes.stderr]
+    .filter(Boolean)
+    .join("\n")
+    .trim();
   if (out) console.error(out);
   process.exit(1);
 }
