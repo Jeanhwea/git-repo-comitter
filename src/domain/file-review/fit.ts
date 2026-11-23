@@ -144,7 +144,9 @@ export function fitFilesWithinBudget(
     const sizeDigits = String(file.content.length).length;
     return (
       total +
-      estimateTokens(`<file path="${file.path}" size="${sizeDigits}">\n\n</file>`)
+      estimateTokens(
+        `<file path="${file.path}" size="${sizeDigits}">\n\n</file>`,
+      )
     );
   }, 0);
 
