@@ -11,6 +11,13 @@ export interface NewFileContent {
 }
 
 /**
+ * 文件内容超出 token 预算时的裁剪说明。
+ * 放在保留片段之间，明确告知模型省略部分的存在，避免把裁剪误判为文件原文。
+ */
+export const TRUNCATED_CONTENT_NOTICE =
+  "\n\n［文件内容过长，部分内容已省略；被省略部分不在本次审查范围内，禁止臆测。］\n\n";
+
+/**
  * 包裹单个新增文件，路径写在 path 属性、内容字符数写在 size 属性上。
  * @param path - 文件路径，写入 path 属性。
  * @param content - 文件内容（不可读时为占位文本），其长度写入 size 属性。

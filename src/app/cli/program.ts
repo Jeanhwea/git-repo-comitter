@@ -56,7 +56,16 @@ function handleCliError(err: unknown): never {
     console.error("错误:", err.message);
     process.exit(EXIT_CODES[err.code]);
   }
-  console.error("意外错误:", err instanceof Error ? err.message : String(err));
+  const rawMessage = err instanceof Error ? err.message : String(err);
+  // 上下文超长属于用户输入规模问题：给出可操作的提示，而不是裸的 400 错误。
+  if (/maximum context length|context_length_exceeded/i.test(rawMessage)) {
+    console.error(
+      "错误: 输入内容超出模型上下文容量，请拆分提交或调大配置中的 maxInputTokens 后重试。",
+    );
+    console.error(`  模型原始信息: ${rawMessage}`);
+    process.exit(1);
+  }
+  console.error("意外错误:", rawMessage);
   process.exit(1);
 }
 
